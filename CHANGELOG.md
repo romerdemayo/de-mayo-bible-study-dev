@@ -1,3 +1,10 @@
+## v1.13.0-dev — Bible Reel Creator Beta
+- Social Studio is visible in the sidebar.
+- Facebook Auto Publisher is hidden from the sidebar but remains available by direct route.
+- Added a Reels & Shorts beta creator with editable Scripture scripts.
+- Added 9:16 animated phone preview, browser voice narration, and ambient sound previews.
+- Added script copy workflow for Facebook Reels, Instagram Reels, and YouTube Shorts.
+
 # Changelog
 
 ## 1.12.3-dev — Smart Cross-Device Facebook Sharing
