@@ -1,3 +1,1 @@
-De Mayo Bible Studies DEV
-Version: 1.13.2-dev
-Feature: Social Studio visible under Create + Bible Reel Creator Beta
+1.15.0-dev

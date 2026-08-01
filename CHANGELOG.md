@@ -1,3 +1,16 @@
+## 1.15.0-dev
+- Added a free GitHub Actions MP4 renderer for phones and computers.
+- Added natural voice narration with an offline fallback.
+- Added original ambient audio, dynamic text fitting, and downloadable MP4 artifacts.
+- Added Create MP4 and Copy Reel Request controls in Bible Reel Creator.
+
+# Version 1.14.1-dev
+
+- Added Christian Creator Studio as its own main tab.
+- Added free local generators for prayers, devotionals, encouragement, and Christian quotes.
+- Connected Creator Studio to Bible Reel Creator and Social Studio.
+- Kept all Phase 1 tools browser-based with no paid API requirement.
+
 
 ## 1.13.1-dev — Social Studio visibility fix
 - Restored **Social Studio** as a visible sidebar tab under **More**.
@@ -114,3 +127,9 @@
 - Added feature and device status tracking.
 - Added local bug tracker, QA notes, and exportable QA report.
 - Added critical blocker rules and mobile-friendly Mission Control layout.
+
+## 1.14.2-dev
+- Fixed overlapping text in saved Bible Reel videos.
+- Added dynamic font sizing and smart wrapping for long verses, prayers, and reflections.
+- Added safe top, bottom, and side margins so headings, references, and branding remain separated.
+- Saved reel and canvas export now keep content vertically balanced.
