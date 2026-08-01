@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /
+
+# Development and testing site. Production site:
+# https://romerdemayo.github.io/de-mayo-bible-study/

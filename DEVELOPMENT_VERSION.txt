@@ -1,0 +1,3 @@
+De Mayo Bible Studies 1.12.3-dev
+Development & QA Centre Pro
+Build date: 1 August 2026
