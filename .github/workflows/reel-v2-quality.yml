@@ -1,0 +1,41 @@
+name: Reel Creator V2 Quality
+
+on:
+  pull_request:
+    paths:
+      - 'reels/**'
+      - 'index.html'
+      - 'service-worker.js'
+      - '.github/workflows/reel-v2-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate JavaScript syntax
+        run: node --check reels/reel-creator-v2.js
+
+      - name: Confirm V2 assets are loaded
+        run: |
+          grep -q 'reels/reel-creator-v2.css' index.html
+          grep -q 'reels/reel-creator-v2.js' index.html
+          grep -q 'reels/reel-creator-v2.css' service-worker.js
+          grep -q 'reels/reel-creator-v2.js' service-worker.js
+
+      - name: Check mobile and accessibility safeguards
+        run: |
+          grep -q 'prefers-reduced-motion' reels/reel-creator-v2.css
+          grep -q '@media(max-width:520px)' reels/reel-creator-v2.css
+          grep -q 'Dynamic font sizing' reels/reel-creator-v2.js
