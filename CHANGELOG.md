@@ -1,3 +1,10 @@
+# Version 1.14.0-dev
+
+- Added Christian Creator Studio as its own main tab.
+- Added free local generators for prayers, devotionals, encouragement, and Christian quotes.
+- Connected Creator Studio to Bible Reel Creator and Social Studio.
+- Kept all Phase 1 tools browser-based with no paid API requirement.
+
 
 ## 1.13.1-dev — Social Studio visibility fix
 - Restored **Social Studio** as a visible sidebar tab under **More**.
