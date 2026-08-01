@@ -58,7 +58,7 @@ const navGroups=[
  ['Study',[['highlights','🖍 Highlights'],['verseNotes','🗒 Verse Notes'],['favourites','★ Favourites'],['myresources','📁 Created Resources'],['devotionals','🌅 Devotionals'],['studies','📚 Bible Studies']]],
  ['Create',[['creator','✨ Quick Create'],['notes','📝 Bible Study Creator'],['prayer','🙏 Prayer Creator'],['sermon','🎤 Sermon Studio'],['kids','🧒 Kids Ministry Studio']]],
  ['Ministry',[['kidslibrary','👧 Kids Lessons'],['prayerlibrary','🙏 Prayer Library'],['exhortations','🎤 Exhortations'],['salvation','❤️ Salvation Guide'],['characters','👥 Bible Characters'],['dictionary','📘 Bible Dictionary']]],
- ['More',[['socialstudio','🎨 Social Studio'],['fbpublisher','📅 Facebook Auto Publisher'],['devdashboard','🚀 Development & QA Centre'],['analytics','📊 Ministry Insights'],['backup','🔒 Backup & Restore'],['support','❤️ Support the Ministry'],['feedback','💬 Feedback & Contact'],['help','❓ Help & User Guide'],['about','ℹ️ About & Copyright']]]
+ ['More',[['devdashboard','🚀 Development & QA Centre'],['analytics','📊 Ministry Insights'],['backup','🔒 Backup & Restore'],['support','❤️ Support the Ministry'],['feedback','💬 Feedback & Contact'],['help','❓ Help & User Guide'],['about','ℹ️ About & Copyright']]]
 ]
 const pages=navGroups.flatMap(g=>g[1]);
 const internalPages=['resource'];
