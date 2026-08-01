@@ -1,2 +1,3 @@
-1.14.0-dev
-Christian Creator Studio Phase 1
+De Mayo Bible Studies Development Build
+Version: 1.14.0-dev
+Feature: Free WebM reel export with device voice and ambient audio
