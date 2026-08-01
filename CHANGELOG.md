@@ -1,10 +1,9 @@
-## v1.14.0-dev — Free Reel Audio Export
+# Version 1.14.1-dev
 
-- Added guided full-reel recording on desktop Chrome/Edge.
-- Records the current tab with device text-to-speech narration and generated ambient sound.
-- Downloads a WebM reel without Google services, API keys, or paid cloud tools.
-- Added clear checks when tab audio is not enabled.
-- Updated service-worker cache version.
+- Added Christian Creator Studio as its own main tab.
+- Added free local generators for prayers, devotionals, encouragement, and Christian quotes.
+- Connected Creator Studio to Bible Reel Creator and Social Studio.
+- Kept all Phase 1 tools browser-based with no paid API requirement.
 
 
 ## 1.13.1-dev — Social Studio visibility fix
