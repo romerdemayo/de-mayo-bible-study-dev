@@ -1,11 +1,11 @@
 /* De Mayo Bible Studies | Project Phoenix performance cache */
-const VERSION='1.16.5-dev-public-reel-hotfix';
+const VERSION='1.16.6-dev-direct-browser-mp4';
 const SHELL_CACHE=`de-mayo-shell-${VERSION}`;
 const RUNTIME_CACHE=`de-mayo-runtime-${VERSION}`;
 const OFFLINE_URL='./index.html';
 const SHELL=[
  './','./index.html','./styles.css','./app.js','./analytics-config.js','./analytics-loader.js',
- './reels/reel-creator-v2.css','./reels/reel-creator-v2.js','./reels/native-media.js','./reels/iphone-share.js','./reels/browser-mp4.js','./reels/public-reel-hotfix.js',
+ './reels/reel-creator-v2.css','./reels/reel-creator-v2.js','./reels/native-media.js','./reels/iphone-share.js','./reels/browser-mp4.js','./reels/public-reel-hotfix.js','./reels/export-cleanup.js',
  './manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-192.png','./icon-maskable-512.png',
  './apple-touch-icon.png','./social-preview.png'
 ];
