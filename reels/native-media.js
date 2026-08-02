@@ -31,14 +31,28 @@ async function saveVideoToPhotos(file){
   try{
     status('Saving Reel video to Photos…','info');
     const path=await fileToDataUrl(file);
-    await Media.saveVideo({path,albumIdentifier:'De Mayo Bible Studies'});
+    await Media.saveVideo({path});
     status('Reel saved directly to Photos.','success');
     return true;
   }catch(error){
     console.error(error);
-    status('Could not save directly to Photos. The Share Sheet will open instead.','error');
+    status('Could not save directly to Photos. Please use the Share Sheet.','error');
     return false;
   }
+}
+if(isNative){
+  document.addEventListener('change',event=>{
+    const input=event.target;
+    if(!(input instanceof HTMLInputElement)||input.id!=='dmFinishedVideoPicker')return;
+    const file=input.files&&input.files[0];
+    if(!file)return;
+    event.stopImmediatePropagation();
+    saveVideoToPhotos(file).finally(()=>{input.value='';});
+  },true);
+  document.addEventListener('click',event=>{
+    const button=event.target&&event.target.closest&&event.target.closest('#dmSaveFinishedVideo');
+    if(button)button.textContent='📲 Save MP4 Directly to Photos';
+  },true);
 }
 window.DeMayoNativeMedia={isNative,saveVideoToPhotos};
 })();
