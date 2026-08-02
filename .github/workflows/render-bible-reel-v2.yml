@@ -1,0 +1,110 @@
+name: Render Bible Reel MP4 V2
+
+on:
+  workflow_dispatch:
+    inputs:
+      reel_json:
+        description: "Paste the JSON copied or downloaded by Bible Reel Creator"
+        required: true
+        type: string
+      voice:
+        description: "Narration voice"
+        required: true
+        default: female
+        type: choice
+        options:
+          - female
+          - male
+      duration:
+        description: "Minimum video length"
+        required: true
+        default: "30"
+        type: choice
+        options:
+          - "15"
+          - "30"
+          - "45"
+          - "60"
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  render:
+    name: Create 1080x1920 MP4
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out DEV main
+        uses: actions/checkout@v4
+
+      - name: Install free rendering tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core
+          python -m pip install --upgrade pip
+          python -m pip install pillow edge-tts
+
+      - name: Validate and prepare request
+        env:
+          REEL_JSON: ${{ inputs.reel_json }}
+          VOICE: ${{ inputs.voice }}
+          DURATION: ${{ inputs.duration }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+
+          raw = os.environ.get("REEL_JSON", "").strip()
+          if not raw:
+              raise SystemExit("The Reel JSON field is empty.")
+          try:
+              payload = json.loads(raw)
+          except json.JSONDecodeError as exc:
+              raise SystemExit(f"Invalid JSON: {exc}")
+
+          content = payload.get("content", payload)
+          settings = payload.get("settings", {})
+          request = {
+              "hook": str(content.get("title") or "Today's Bible encouragement")[:160],
+              "verse": str(content.get("verse") or "Trust in the Lord with all your heart.")[:900],
+              "ref": str(content.get("reference") or "Proverbs 3:5")[:100],
+              "reflection": str(content.get("reflection") or "God is faithful in every season.")[:1100],
+              "prayer": str(content.get("prayer") or "Lord, guide me today. Amen.")[:1100],
+              "voice": os.environ.get("VOICE", "female"),
+              "duration": int(os.environ.get("DURATION") or settings.get("duration") or 30),
+              "template": str(settings.get("template") or "classic"),
+              "music": str(settings.get("music") or "ambient"),
+          }
+          if request["duration"] not in (15, 30, 45, 60):
+              request["duration"] = 30
+          pathlib.Path("render-request.json").write_text(
+              json.dumps(request, indent=2, ensure_ascii=False), encoding="utf-8"
+          )
+          print(json.dumps(request, indent=2, ensure_ascii=False))
+          PY
+
+      - name: Render MP4 with narration and ambient music
+        run: |
+          mkdir -p output
+          python scripts/render_reel.py render-request.json output/de-mayo-bible-reel.mp4
+          test -s output/de-mayo-bible-reel.mp4
+          ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 output/de-mayo-bible-reel.mp4
+
+      - name: Save MP4 for download
+        uses: actions/upload-artifact@v4
+        with:
+          name: de-mayo-bible-reel-mp4
+          path: output/de-mayo-bible-reel.mp4
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Save editable request
+        uses: actions/upload-artifact@v4
+        with:
+          name: de-mayo-bible-reel-project
+          path: render-request.json
+          retention-days: 14
