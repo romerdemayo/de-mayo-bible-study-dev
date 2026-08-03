@@ -1,11 +1,11 @@
 /* De Mayo Bible Studies | Project Phoenix performance cache */
-const VERSION='1.17.6-dev-native-mp4-recorder';
+const VERSION='1.17.7-dev-reel-stability';
 const SHELL_CACHE=`de-mayo-shell-${VERSION}`;
 const RUNTIME_CACHE=`de-mayo-runtime-${VERSION}`;
 const OFFLINE_URL='./index.html';
 const SHELL=[
  './','./index.html','./styles.css','./app.js','./analytics-config.js','./analytics-loader.js',
- './reels/reel-creator-v2.css','./reels/reel-creator-v2.js','./reels/reel-entry.js','./reels/mp4-result-panel.js','./reels/desktop-mp4-download-fix.js','./reels/native-mp4-recorder.js','./reels/browser-mp4.js',
+ './reels/reel-creator-v2.css','./reels/reel-creator-v2.js','./reels/reel-entry.js','./reels/mp4-result-panel.js','./reels/desktop-mp4-download-fix.js','./reels/mp4-engine-loader.js','./reels/reel-ux-polish.js','./reels/native-mp4-recorder.js','./reels/browser-mp4.js',
  './manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-192.png','./icon-maskable-512.png',
  './apple-touch-icon.png','./social-preview.png'
 ];
