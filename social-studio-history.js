@@ -1,0 +1,59 @@
+/* De Mayo Bible Studies - Social Studio fresh-content memory */
+(function(){
+'use strict';
+const GENERATED_KEY='dm_socialStudioGeneratedHistory';
+const POSTED_KEY='dm_socialStudioPostedHistory';
+const MAX_GENERATED=500,MAX_POSTED=250;
+const $=s=>document.querySelector(s);
+function read(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return []}}
+function write(key,value){localStorage.setItem(key,JSON.stringify(value));}
+function clean(value=''){return String(value).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
+function current(){
+ try{
+  const type=socialStudioState.type||'verse';
+  const body=type==='prayer'?socialStudioState.prayerText:socialStudioState.verseText;
+  const reference=type==='prayer'?'Prayer':socialStudioState.reference;
+  return {type,topic:socialStudioState.topic||'',body:String(body||'').trim(),reference:String(reference||'').trim(),caption:String(socialStudioState.caption||'').trim(),hashtags:String(socialStudioState.hashtags||'').trim(),theme:socialStudioState.theme||'',format:socialStudioState.format||'',createdAt:Date.now()};
+ }catch{return null}
+}
+function signature(item){return clean([item?.type,item?.body,item?.reference].join('|'));}
+function usedSet(){return new Set([...read(GENERATED_KEY),...read(POSTED_KEY).map(signature)].filter(Boolean));}
+function rememberGenerated(item){const sig=signature(item);if(!sig)return;const arr=read(GENERATED_KEY).filter(x=>x!==sig);arr.unshift(sig);write(GENERATED_KEY,arr.slice(0,MAX_GENERATED));}
+function notify(message){if(typeof window.toast==='function')window.toast(message);}
+function generateFresh(original){
+ const used=usedSet();let item=null;
+ for(let attempt=0;attempt<60;attempt++){
+  original();item=current();const sig=signature(item);
+  if(sig&&!used.has(sig)){rememberGenerated(item);notify('Fresh social post generated');refreshPanel();return;}
+ }
+ notify('All matching ideas have been used. Try another spiritual theme or content type.');
+}
+function markPosted(){
+ const item=current();if(!item||!item.body)return notify('Generate or enter a post first.');
+ const sig=signature(item),arr=read(POSTED_KEY).filter(x=>signature(x)!==sig);
+ arr.unshift({...item,postedAt:Date.now()});write(POSTED_KEY,arr.slice(0,MAX_POSTED));rememberGenerated(item);notify('Marked as posted. Social Studio will avoid repeating it.');refreshPanel();
+}
+function loadPosted(index){const item=read(POSTED_KEY)[index];if(!item)return;Object.assign(socialStudioState,{type:item.type,topic:item.topic,verseText:item.type==='verse'?item.body:'',reference:item.reference,prayerText:item.type==='prayer'?item.body:'',caption:item.caption,hashtags:item.hashtags,theme:item.theme,format:item.format});if(typeof socialStudioSync==='function')socialStudioSync();window.scrollTo({top:0,behavior:'smooth'});}
+function removePosted(index){const arr=read(POSTED_KEY);arr.splice(index,1);write(POSTED_KEY,arr);refreshPanel();}
+function clearGenerated(){if(confirm('Clear generated-idea memory? Posted history will remain protected.')){write(GENERATED_KEY,[]);notify('Generated-idea memory cleared.');refreshPanel();}}
+function clearPosted(){if(confirm('Clear all posted-content history? Social Studio may generate those posts again.')){write(POSTED_KEY,[]);notify('Posted history cleared.');refreshPanel();}}
+function refreshPanel(){
+ const panel=$('#dmSocialFreshPanel');if(!panel)return;
+ const posted=read(POSTED_KEY),generated=read(GENERATED_KEY);
+ panel.innerHTML=`<div class="section-heading compact"><div><span class="eyebrow">FRESH CONTENT MEMORY</span><h3>♻️ Never repeat a posted idea</h3></div></div><p class="small-note">This device remembers generated and posted content. Fresh generation automatically skips matching verses and prayers.</p><div class="social-auto-actions"><button class="primary" id="dmFreshIdea">✨ Generate fresh idea</button><button class="ghost" id="dmMarkPosted">✅ Mark current as posted</button></div><p><b>${posted.length}</b> posted items protected · <b>${generated.length}</b> generated ideas remembered</p><details ${posted.length?'':'hidden'}><summary>View posted history</summary><div class="dm-social-history">${posted.slice(0,20).map((x,i)=>`<article class="saved-card"><b>${x.type==='prayer'?'Prayer':(x.reference||'Bible verse')}</b><p>${String(x.body||'').slice(0,150)}</p><small>${new Date(x.postedAt||x.createdAt).toLocaleDateString()}</small><div class="action-row"><button class="ghost" data-dm-social-load="${i}">Open</button><button class="danger" data-dm-social-remove="${i}">Remove</button></div></article>`).join('')}</div></details><div class="action-row"><button class="ghost" id="dmClearGenerated">Clear generated memory</button><button class="ghost" id="dmClearPosted">Clear posted history</button></div>`;
+ $('#dmFreshIdea').onclick=()=>{const surprise=$('#socialGenerateComplete');if(surprise&&surprise._dmOriginal)generateFresh(surprise._dmOriginal);else if(typeof socialGenerateComplete==='function')generateFresh(socialGenerateComplete)};
+ $('#dmMarkPosted').onclick=markPosted;$('#dmClearGenerated').onclick=clearGenerated;$('#dmClearPosted').onclick=clearPosted;
+ panel.querySelectorAll('[data-dm-social-load]').forEach(b=>b.onclick=()=>loadPosted(+b.dataset.dmSocialLoad));
+ panel.querySelectorAll('[data-dm-social-remove]').forEach(b=>b.onclick=()=>removePosted(+b.dataset.dmSocialRemove));
+}
+function wrapButton(id){const button=$('#'+id);if(!button||button.dataset.dmFreshWrapped)return;const original=button.onclick;if(typeof original!=='function')return;button._dmOriginal=original;button.onclick=e=>{e?.preventDefault?.();generateFresh(()=>original.call(button,e));};button.dataset.dmFreshWrapped='1';}
+function install(){
+ if(!$('#socialGenerateComplete'))return;
+ ['socialGenerateVerse','socialGeneratePrayer','socialGenerateComplete','socialDaily'].forEach(wrapButton);
+ if(!$('#dmSocialFreshPanel')){const panel=document.createElement('article');panel.id='dmSocialFreshPanel';panel.className='card';const controls=$('.social-controls');if(controls)controls.insertAdjacentElement('afterend',panel);}
+ refreshPanel();
+ const fb=$('#socialFacebook');if(fb&&!fb.dataset.dmPostedHook){const original=fb.onclick;fb.onclick=e=>{markPosted();return original&&original.call(fb,e)};fb.dataset.dmPostedHook='1';}
+}
+new MutationObserver(()=>queueMicrotask(install)).observe(document.documentElement,{childList:true,subtree:true});
+window.addEventListener('load',install);
+})();
