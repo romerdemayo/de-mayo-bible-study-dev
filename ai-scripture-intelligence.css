@@ -1,0 +1,8 @@
+/* Build 1.19.2 Scripture Intelligence */
+.dm-scripture-intelligence{display:grid;gap:12px;padding:14px;border-radius:18px;background:rgba(46,125,92,.07);border:1px solid rgba(46,125,92,.18)}
+.dm-scripture-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.dm-scripture-head>div{display:flex;align-items:center;gap:9px}.dm-scripture-head h3{margin:0}.dm-scripture-head small{font-weight:700;color:var(--accent,#2f7a62)}
+.dm-scripture-list{display:grid;gap:12px}.dm-scripture-card{padding:15px;border-radius:16px;background:var(--card,#fff);border:1px solid rgba(127,127,127,.18);display:grid;gap:10px;transition:.18s ease}.dm-scripture-card.is-selected{outline:2px solid var(--accent,#2f7a62);box-shadow:0 8px 24px rgba(46,125,92,.12)}
+.dm-scripture-meta{display:flex;justify-content:space-between;gap:10px;align-items:center}.dm-scripture-meta span{font-size:.82rem;font-weight:700}.dm-scripture-meta b{font-size:.78rem;padding:4px 8px;border-radius:999px;background:rgba(46,125,92,.12)}
+.dm-scripture-card h4,.dm-scripture-card p{margin:0}.dm-scripture-card blockquote{margin:0;padding:12px 14px;border-left:4px solid var(--accent,#2f7a62);background:rgba(127,127,127,.06);border-radius:0 12px 12px 0;line-height:1.55;font-style:italic}
+.dm-scripture-actions{display:flex;gap:8px;flex-wrap:wrap}.dm-scripture-actions>*{flex:1 1 150px}
+@media(max-width:560px){.dm-scripture-intelligence{padding:11px}.dm-scripture-card{padding:13px}.dm-scripture-head{align-items:flex-start}.dm-scripture-actions>*{flex-basis:100%}.dm-scripture-card blockquote{font-size:.95rem}}
