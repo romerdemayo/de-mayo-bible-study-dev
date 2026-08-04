@@ -1,9 +1,10 @@
-/* De Mayo Bible Studies - Social Studio 2.1 inspected offline engine */
+/* De Mayo Bible Studies - Social Studio 2.2 inspected offline engine */
 (function(){
 'use strict';
-const VERSE_HISTORY='dm_social_v21_verse_history';
-const PRAYER_HISTORY='dm_social_v21_prayer_history';
-const POSTED_HISTORY='dm_social_v21_posted_history';
+
+const VERSE_HISTORY='dm_social_v22_verse_history';
+const PRAYER_HISTORY='dm_social_v22_prayer_history';
+const POSTED_HISTORY='dm_social_v22_posted_history';
 const MAX_HISTORY=500;
 const $=s=>document.querySelector(s);
 
@@ -39,6 +40,7 @@ const VERSES=[
  ['Isaiah 40:31','But those who wait for Yahweh will renew their strength. They will mount up with wings like eagles.','Strength'],
  ['1 Corinthians 13:4–7','Love is patient and is kind. Love doesn’t envy. Love doesn’t brag, is not proud, and endures all things.','Love']
 ];
+
 const OPENINGS=['Heavenly Father','Faithful God','Lord Jesus','Gracious Father','God of hope','Merciful Lord','Loving Father','Almighty God','Holy God','Compassionate Father'];
 const PRAISE=['thank You that Your mercy is new every morning','I praise You because You remain faithful in every season','thank You that Your presence is nearer than my fear','I worship You as my refuge, strength, and provider','thank You for loving me before I knew how to seek You','I honour You because Your wisdom is higher than mine','I praise You for salvation and new life in Christ','thank You that Your Word remains true when circumstances change'];
 const NEEDS=['Give me wisdom for the decisions before me','Replace my fear with steady trust','Strengthen me where I feel weak and discouraged','Help me forgive freely and respond with grace','Provide what is needed and teach me to depend on You','Guard my thoughts and fill me with Your peace','Lead my family and keep our home centred on Christ','Use today’s challenges to shape me into the likeness of Jesus','Show me who needs encouragement and give me the right words','Teach me to wait faithfully without losing hope','Bring healing and comfort to those who are suffering','Renew my joy and restore my desire to seek You'];
@@ -47,6 +49,30 @@ const CLOSINGS=['In Jesus’ name, Amen.','I place this day into Your faithful h
 const CAPTION_STARTS=['Today’s reminder','Hold on to this truth','Carry this promise with you','Pause and receive this encouragement','Someone may need this today','Let this Scripture steady your heart','A truth worth remembering','God’s Word for the journey ahead'];
 const CAPTION_ENDS=['God is present, faithful, and still working.','You are not walking through today alone.','Bring this truth into prayer and daily life.','Read it slowly and let it shape your next step.','Share it with someone who needs encouragement.','Trust God with what you cannot yet see.','Let faith speak louder than fear today.','His Word remains dependable in every season.'];
 
+const TOPIC_TAGS={
+ hope:['#HopeInGod','#ChristianHope'],
+ peace:['#PeaceOfGod','#PrayerForPeace'],
+ healing:['#HealingPrayer','#GodHeals'],
+ courage:['#CourageInChrist','#BeStrong'],
+ strength:['#StrengthInGod','#GodIsMyStrength'],
+ guidance:['#GodsGuidance','#TrustGod'],
+ forgiveness:['#Forgiveness','#Grace'],
+ salvation:['#Salvation','#JesusSaves'],
+ faith:['#FaithInGod','#WalkByFaith'],
+ love:['#BiblicalLove','#LoveLikeJesus'],
+ trials:['#FaithInTrials','#Perseverance'],
+ provision:['#GodProvides','#TrustHisProvision'],
+ rest:['#RestInGod','#ComeToJesus'],
+ comfort:['#GodComforts','#HopeForTheHurting'],
+ wisdom:['#GodlyWisdom','#AskGod'],
+ grace:['#GraceOfGod','#SavedByGrace'],
+ trust:['#TrustInGod','#GodIsFaithful'],
+ perseverance:['#KeepTheFaith','#DoNotGiveUp'],
+ care:['#GodCares','#CastYourCares'],
+ faithfulness:['#GodIsFaithful','#NewMercies'],
+ priority:['#SeekFirst','#KingdomFirst']
+};
+
 function read(key){try{const x=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(x)?x:[]}catch{return []}}
 function write(key,val){localStorage.setItem(key,JSON.stringify(val))}
 function clean(v=''){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
@@ -54,12 +80,30 @@ function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
 function notify(message){if(typeof window.toast==='function')window.toast(message)}
 function setField(id,value,event='input'){const el=$(id);if(!el)return false;el.value=value;el.dispatchEvent(new Event(event,{bubbles:true}));return true}
 function currentType(){return $('#socialType')?.value==='prayer'?'prayer':'verse'}
+function selectedTopic(){return ($('#socialTopic')?.value||'hope').toLowerCase()}
 function tokenSet(text){return new Set(clean(text).split(' ').filter(x=>x.length>3))}
 function similarity(a,b){const A=tokenSet(a),B=tokenSet(b);if(!A.size||!B.size)return 0;let common=0;A.forEach(x=>{if(B.has(x))common++});return common/(A.size+B.size-common)}
 function recentPrayerBodies(){return [...read(PRAYER_HISTORY),...read(POSTED_HISTORY).filter(x=>x.type==='prayer')].map(x=>x.body||'').slice(0,120)}
 function remember(key,item){const arr=read(key).filter(x=>x.signature!==item.signature);arr.unshift(item);write(key,arr.slice(0,MAX_HISTORY))}
 function postedReferences(){return new Set(read(POSTED_HISTORY).filter(x=>x.type==='verse').map(x=>x.reference))}
 function usedVerseReferences(){return new Set(read(VERSE_HISTORY).map(x=>x.reference))}
+function hashtagText(type,topic){
+ const key=String(topic||'hope').toLowerCase();
+ const topical=TOPIC_TAGS[key]||TOPIC_TAGS.hope;
+ const base=type==='prayer'?['#Prayer','#ChristianPrayer']:['#BibleVerse','#Scripture'];
+ return [...base,...topical,'#Faith','#Jesus','#DeMayoBibleStudies'].join(' ');
+}
+function clipboardWrite(text){
+ const value=String(text||'').trim();
+ if(!value){notify('Nothing to copy yet.');return}
+ if(navigator.clipboard?.writeText){navigator.clipboard.writeText(value).then(()=>notify('Copied')).catch(()=>fallbackCopy(value))}
+ else fallbackCopy(value);
+}
+function fallbackCopy(value){
+ const ta=document.createElement('textarea');ta.value=value;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+ try{document.execCommand('copy');notify('Copied')}catch{notify('Copy failed. Select the text manually.')}
+ ta.remove();
+}
 
 function createVerse(){
  let unavailable=new Set([...usedVerseReferences(),...postedReferences()]);
@@ -67,27 +111,28 @@ function createVerse(){
  if(!available.length){write(VERSE_HISTORY,[]);unavailable=postedReferences();available=VERSES.filter(v=>!unavailable.has(v[0]));}
  if(!available.length)available=VERSES;
  const verse=pick(available),caption=`${pick(CAPTION_STARTS)} from ${verse[0]}: ${pick(CAPTION_ENDS)}`;
- return {type:'verse',reference:verse[0],body:verse[1],caption,hashtags:`#BibleVerse #${verse[2]} #Faith #ChristianEncouragement #DeMayoBibleStudies`,signature:clean(`verse|${verse[0]}|${verse[1]}|${caption}`),createdAt:Date.now()};
+ const topic=verse[2].toLowerCase();
+ return {type:'verse',reference:verse[0],body:verse[1],caption,hashtags:hashtagText('verse',topic),signature:clean(`verse|${verse[0]}|${verse[1]}|${caption}`),createdAt:Date.now()};
 }
 function createPrayer(){
- const recent=recentPrayerBodies();
+ const recent=recentPrayerBodies(),topic=selectedTopic();
  for(let attempt=0;attempt<100;attempt++){
   const verse=pick(VERSES);
   const body=`${pick(OPENINGS)}, ${pick(PRAISE)}.\n\n${pick(NEEDS)}. ${pick(ACTIONS)}.\n\nYour Word in ${verse[0]} reminds me: “${verse[1]}”\n\n${pick(CLOSINGS)}`;
   const signature=clean(`prayer|${body}`);
   const exact=read(PRAYER_HISTORY).some(x=>x.signature===signature)||read(POSTED_HISTORY).some(x=>x.signature===signature);
   const tooSimilar=recent.some(old=>similarity(old,body)>.82);
-  if(!exact&&!tooSimilar)return {type:'prayer',reference:'Prayer',sourceReference:verse[0],body,caption:`A prayer inspired by ${verse[0]}\n\n${body}`,hashtags:'#Prayer #Faith #Jesus #ChristianEncouragement #DeMayoBibleStudies',signature,createdAt:Date.now()};
+  if(!exact&&!tooSimilar)return {type:'prayer',reference:'Prayer',sourceReference:verse[0],body,caption:`A prayer for ${topic}, inspired by ${verse[0]}.\n\n${body}`,hashtags:hashtagText('prayer',topic),signature,createdAt:Date.now()};
  }
  const verse=pick(VERSES),body=`${pick(OPENINGS)}, ${pick(PRAISE)}.\n\n${pick(NEEDS)}. ${pick(ACTIONS)}.\n\n${pick(CLOSINGS)}`;
- return {type:'prayer',reference:'Prayer',sourceReference:verse[0],body,caption:`A prayer inspired by ${verse[0]}\n\n${body}`,hashtags:'#Prayer #Faith #DeMayoBibleStudies',signature:clean(`prayer|${body}`),createdAt:Date.now()};
+ return {type:'prayer',reference:'Prayer',sourceReference:verse[0],body,caption:`A prayer for ${topic}, inspired by ${verse[0]}.\n\n${body}`,hashtags:hashtagText('prayer',topic),signature:clean(`prayer|${body}`),createdAt:Date.now()};
 }
 function apply(item){
  setField('#socialType',item.type,'change');
- if(item.type==='verse'){
-  setField('#socialVerse',item.body);setField('#socialReference',item.reference);
- }else setField('#socialPrayer',item.body);
- setField('#socialCaption',item.caption);setField('#socialHashtags',item.hashtags);
+ if(item.type==='verse'){setField('#socialVerse',item.body);setField('#socialReference',item.reference)}
+ else setField('#socialPrayer',item.body);
+ setField('#socialCaption',item.caption);
+ setField('#socialHashtags',item.hashtags);
  remember(item.type==='prayer'?PRAYER_HISTORY:VERSE_HISTORY,item);
  renderPanel();
  notify(item.type==='prayer'?'Fresh prayer created':'Fresh Bible verse post created');
@@ -95,29 +140,45 @@ function apply(item){
 function generate(type){apply(type==='prayer'?createPrayer():createVerse())}
 function surprise(){generate(Math.random()<.5?'prayer':'verse')}
 function currentItem(){
- const type=currentType();const body=type==='prayer'?$('#socialPrayer')?.value:$('#socialVerse')?.value;
+ const type=currentType(),body=type==='prayer'?$('#socialPrayer')?.value:$('#socialVerse')?.value;
  if(!String(body||'').trim())return null;
  const reference=type==='prayer'?'Prayer':($('#socialReference')?.value||'');
  const caption=$('#socialCaption')?.value||'',hashtags=$('#socialHashtags')?.value||'';
  return {type,reference,body:String(body).trim(),caption,hashtags,signature:clean(`${type}|${reference}|${body}|${caption}`),postedAt:Date.now()};
 }
 function markPosted(){const item=currentItem();if(!item)return notify('Create a post first.');remember(POSTED_HISTORY,item);notify('Marked as posted. Social Studio will avoid it.');renderPanel()}
+
 function renderPanel(){
  const controls=$('.social-controls');if(!controls)return;
  let panel=$('#dmSocialV2Panel');if(!panel){panel=document.createElement('article');panel.id='dmSocialV2Panel';panel.className='card';controls.insertAdjacentElement('afterend',panel)}
  const type=currentType(),verseCount=read(VERSE_HISTORY).length,prayerCount=read(PRAYER_HISTORY).length,posted=read(POSTED_HISTORY).length;
- panel.innerHTML=`<div class="section-heading compact"><div><span class="eyebrow">SOCIAL STUDIO 2.1</span><h3>✨ Offline fresh-content engine</h3></div></div><p class="small-note">No API. Bible references rotate before repeating, while prayers are checked for exact and near-duplicate wording.</p><div class="social-auto-actions"><button class="primary" id="dmSocialFreshSelected">Generate fresh ${type==='prayer'?'prayer':'Bible verse'}</button><button class="ghost" id="dmSocialMarkPosted">✅ Mark current as posted</button></div><p><b>${verseCount}</b> verses used · <b>${prayerCount}</b> prayers used · <b>${posted}</b> posted items protected</p>`;
+ panel.innerHTML=`<div class="section-heading compact"><div><span class="eyebrow">SOCIAL STUDIO 2.2</span><h3>✨ Offline fresh-content engine</h3></div></div>
+ <p class="small-note">No API. Hashtags now match the generated prayer or Scripture topic.</p>
+ <div class="social-auto-actions">
+  <button class="primary" id="dmSocialFreshSelected">Generate fresh ${type==='prayer'?'prayer':'Bible verse'}</button>
+  <button class="ghost" id="dmSocialMarkPosted">✅ Mark current as posted</button>
+ </div>
+ <div class="social-auto-actions">
+  <button class="ghost" id="dmCopyCaptionOnly">📋 Copy caption only</button>
+  <button class="ghost" id="dmCopyHashtagsOnly"># Copy hashtags only</button>
+  <button class="ghost" id="dmCopyCaptionTags">📋 Copy caption + hashtags</button>
+ </div>
+ <p><b>${verseCount}</b> verses used · <b>${prayerCount}</b> prayers used · <b>${posted}</b> posted items protected</p>`;
 }
 function handleClick(event){
  const button=event.target.closest('button');if(!button)return;
  const id=button.id;
- if(!['socialGenerateVerse','socialGeneratePrayer','socialGenerateComplete','dmSocialFreshSelected','dmSocialMarkPosted'].includes(id))return;
+ const handled=['socialGenerateVerse','socialGeneratePrayer','socialGenerateComplete','dmSocialFreshSelected','dmSocialMarkPosted','dmCopyCaptionOnly','dmCopyHashtagsOnly','dmCopyCaptionTags'];
+ if(!handled.includes(id))return;
  event.preventDefault();event.stopImmediatePropagation();
  if(id==='socialGenerateVerse')generate('verse');
  else if(id==='socialGeneratePrayer')generate('prayer');
  else if(id==='socialGenerateComplete')surprise();
  else if(id==='dmSocialFreshSelected')generate(currentType());
- else markPosted();
+ else if(id==='dmSocialMarkPosted')markPosted();
+ else if(id==='dmCopyCaptionOnly')clipboardWrite($('#socialCaption')?.value);
+ else if(id==='dmCopyHashtagsOnly')clipboardWrite($('#socialHashtags')?.value);
+ else clipboardWrite([$('#socialCaption')?.value,$('#socialHashtags')?.value].filter(Boolean).join('\n\n'));
 }
 function schedulePanel(){setTimeout(renderPanel,60)}
 document.addEventListener('click',handleClick,true);
