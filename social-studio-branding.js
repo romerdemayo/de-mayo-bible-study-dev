@@ -13,12 +13,10 @@ function saveSettings(next){localStorage.setItem(SETTINGS_KEY,JSON.stringify(nex
 function notify(message){if(typeof window.toast==='function')window.toast(message)}
 function currentType(){return $('#socialType')?.value==='prayer'?'prayer':'verse'}
 function footerText(type,style){
- const source=type==='prayer'?'facebook_prayer':'facebook_verse';
- const url=`${MAIN_URL}?src=${source}`;
- if(style==='minimal')return `Free Bible App\n${url}`;
- if(style==='simple')return `📖 De Mayo Bible Studies\n${url}`;
- if(type==='prayer')return `🙏 Continue your walk with God through free prayers, Bible studies, devotionals, and ministry tools in De Mayo Bible Studies.\n${url}`;
- return `📖 Continue studying God’s Word for free with De Mayo Bible Studies. Explore Bible studies, devotionals, prayers, kids lessons, and ministry tools.\n${url}`;
+ if(style==='minimal')return `Free Bible App\n${MAIN_URL}`;
+ if(style==='simple')return `📖 De Mayo Bible Studies\n${MAIN_URL}`;
+ if(type==='prayer')return `🙏 Continue your walk with God through free prayers, Bible studies, devotionals, and ministry tools in De Mayo Bible Studies.\n${MAIN_URL}`;
+ return `📖 Continue studying God’s Word for free with De Mayo Bible Studies. Explore Bible studies, devotionals, prayers, kids lessons, and ministry tools.\n${MAIN_URL}`;
 }
 function stripFooter(text=''){
  const value=String(text);
@@ -35,6 +33,25 @@ function updateCaption(force=false){
  const next=brandedCaption(field.value);
  if(!force&&next===field.value)return;
  applying=true;field.value=next;field.dispatchEvent(new Event('input',{bubbles:true}));applying=false;
+ renderClickablePreview();
+}
+function renderClickablePreview(){
+ const preview=$('.social-post-preview');
+ if(!preview)return;
+ let link=$('#dmSocialMainAppLink');
+ if(!link){
+  link=document.createElement('a');
+  link.id='dmSocialMainAppLink';
+  link.href=MAIN_URL;
+  link.target='_blank';
+  link.rel='noopener noreferrer';
+  link.className='text-link';
+  link.style.display='inline-block';
+  link.style.marginTop='10px';
+  preview.appendChild(link);
+ }
+ link.textContent=`📖 Open De Mayo Bible Studies — ${MAIN_URL}`;
+ link.hidden=!readSettings().enabled;
 }
 function renderSettings(){
  const controls=$('.social-controls');if(!controls)return;
@@ -44,13 +61,15 @@ function renderSettings(){
  card.innerHTML=`<div class="section-heading compact"><div><span class="eyebrow">MINISTRY BRANDING</span><h3>📖 Bring readers back to the Bible app</h3></div></div>
  <label class="check-row"><input type="checkbox" id="dmBrandingEnabled" ${settings.enabled?'checked':''}> Include the De Mayo Bible Studies link in captions</label>
  <label>Caption footer style<select id="dmBrandingStyle"><option value="invitation" ${settings.style==='invitation'?'selected':''}>Invitation</option><option value="simple" ${settings.style==='simple'?'selected':''}>Simple</option><option value="minimal" ${settings.style==='minimal'?'selected':''}>Minimal</option></select></label>
- <p class="small-note">Public posts use the main app address, not the DEV testing address.</p>
+ <p class="small-note">The exact production link below is used. Facebook makes a pasted full URL clickable automatically.</p>
+ <p><a href="${MAIN_URL}" target="_blank" rel="noopener noreferrer" class="text-link">${MAIN_URL}</a></p>
  <div class="social-auto-actions"><button class="ghost" id="dmApplyBranding">Apply to current caption</button></div>`;
- $('#dmBrandingEnabled').onchange=e=>{const next={...readSettings(),enabled:e.target.checked};saveSettings(next);updateCaption(true);notify(e.target.checked?'Website link enabled':'Website link removed')};
+ $('#dmBrandingEnabled').onchange=e=>{const next={...readSettings(),enabled:e.target.checked};saveSettings(next);updateCaption(true);renderClickablePreview();notify(e.target.checked?'Website link enabled':'Website link removed')};
  $('#dmBrandingStyle').onchange=e=>{const next={...readSettings(),style:e.target.value};saveSettings(next);updateCaption(true);notify('Caption footer updated')};
- $('#dmApplyBranding').onclick=e=>{e.preventDefault();updateCaption(true);notify('Website link added to caption')};
+ $('#dmApplyBranding').onclick=e=>{e.preventDefault();updateCaption(true);notify('Production website link added to caption')};
+ renderClickablePreview();
 }
-function schedule(){clearTimeout(timer);timer=setTimeout(()=>{renderSettings();updateCaption()},80)}
+function schedule(){clearTimeout(timer);timer=setTimeout(()=>{renderSettings();updateCaption();renderClickablePreview()},80)}
 
 document.addEventListener('input',e=>{if(e.target?.id==='socialCaption'&&!applying)schedule()});
 document.addEventListener('change',e=>{if(e.target?.id==='socialType')schedule()});
