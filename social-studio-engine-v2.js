@@ -1,116 +1,129 @@
-/* De Mayo Bible Studies - Social Studio 2.0 offline engine */
+/* De Mayo Bible Studies - Social Studio 2.1 inspected offline engine */
 (function(){
 'use strict';
-const HISTORY_KEY='dm_social_v2_history';
-const POSTED_KEY='dm_social_v2_posted';
-const MAX_HISTORY=600;
+const VERSE_HISTORY='dm_social_v21_verse_history';
+const PRAYER_HISTORY='dm_social_v21_prayer_history';
+const POSTED_HISTORY='dm_social_v21_posted_history';
+const MAX_HISTORY=500;
 const $=s=>document.querySelector(s);
-let installedControls=null;
-let installTimer=0;
 
 const VERSES=[
- ['Isaiah 41:10','Don’t be afraid, for I am with you. Don’t be dismayed, for I am your God. I will strengthen you. Yes, I will help you. Yes, I will uphold you with the right hand of my righteousness.','courage'],
- ['Philippians 4:6–7','In nothing be anxious, but in everything, by prayer and petition with thanksgiving, let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your thoughts in Christ Jesus.','peace'],
- ['Romans 8:28','We know that all things work together for good for those who love God, to those who are called according to his purpose.','hope'],
- ['Psalm 46:1','God is our refuge and strength, a very present help in trouble.','strength'],
- ['Proverbs 3:5–6','Trust in Yahweh with all your heart, and don’t lean on your own understanding. In all your ways acknowledge him, and he will make your paths straight.','guidance'],
- ['Matthew 11:28','Come to me, all you who labor and are heavily burdened, and I will give you rest.','rest'],
- ['John 14:27','Peace I leave with you. My peace I give to you; not as the world gives, I give to you. Don’t let your heart be troubled, neither let it be fearful.','peace'],
- ['Psalm 34:18','Yahweh is near to those who have a broken heart, and saves those who have a crushed spirit.','comfort'],
- ['James 1:5','But if any of you lacks wisdom, let him ask of God, who gives to all liberally and without reproach; and it will be given to him.','wisdom'],
- ['2 Corinthians 12:9','My grace is sufficient for you, for my power is made perfect in weakness.','grace'],
- ['Romans 15:13','Now may the God of hope fill you with all joy and peace in believing, that you may abound in hope, in the power of the Holy Spirit.','hope'],
- ['Psalm 23:1','Yahweh is my shepherd: I shall lack nothing.','provision'],
- ['Matthew 6:33','But seek first God’s Kingdom and his righteousness; and all these things will be given to you as well.','priority'],
- ['Ephesians 4:32','Be kind to one another, tenderhearted, forgiving each other, just as God also in Christ forgave you.','forgiveness'],
- ['Joshua 1:9','Haven’t I commanded you? Be strong and courageous. Don’t be afraid, neither be dismayed; for Yahweh your God is with you wherever you go.','courage'],
- ['Psalm 119:105','Your word is a lamp to my feet, and a light for my path.','guidance'],
- ['Galatians 6:9','Let us not be weary in doing good, for we will reap in due season, if we don’t give up.','perseverance'],
- ['1 Peter 5:7','Casting all your worries on him, because he cares for you.','care'],
- ['Lamentations 3:22–23','It is because of Yahweh’s loving kindnesses that we are not consumed, because his compassion doesn’t fail. They are new every morning. Great is your faithfulness.','faithfulness'],
- ['Psalm 37:5','Commit your way to Yahweh. Trust also in him, and he will do this.','trust']
+ ['Isaiah 41:10','Don’t be afraid, for I am with you. Don’t be dismayed, for I am your God. I will strengthen you. Yes, I will help you. Yes, I will uphold you with the right hand of my righteousness.','Courage'],
+ ['Philippians 4:6–7','In nothing be anxious, but in everything, by prayer and petition with thanksgiving, let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your thoughts in Christ Jesus.','Peace'],
+ ['Romans 8:28','We know that all things work together for good for those who love God, to those who are called according to his purpose.','Hope'],
+ ['Psalm 46:1','God is our refuge and strength, a very present help in trouble.','Strength'],
+ ['Proverbs 3:5–6','Trust in Yahweh with all your heart, and don’t lean on your own understanding. In all your ways acknowledge him, and he will make your paths straight.','Guidance'],
+ ['Matthew 11:28','Come to me, all you who labor and are heavily burdened, and I will give you rest.','Rest'],
+ ['John 14:27','Peace I leave with you. My peace I give to you; not as the world gives, I give to you. Don’t let your heart be troubled, neither let it be fearful.','Peace'],
+ ['Psalm 34:18','Yahweh is near to those who have a broken heart, and saves those who have a crushed spirit.','Comfort'],
+ ['James 1:5','But if any of you lacks wisdom, let him ask of God, who gives to all liberally and without reproach; and it will be given to him.','Wisdom'],
+ ['2 Corinthians 12:9','My grace is sufficient for you, for my power is made perfect in weakness.','Grace'],
+ ['Romans 15:13','Now may the God of hope fill you with all joy and peace in believing, that you may abound in hope, in the power of the Holy Spirit.','Hope'],
+ ['Psalm 23:1','Yahweh is my shepherd: I shall lack nothing.','Provision'],
+ ['Matthew 6:33','But seek first God’s Kingdom and his righteousness; and all these things will be given to you as well.','Priority'],
+ ['Ephesians 4:32','Be kind to one another, tenderhearted, forgiving each other, just as God also in Christ forgave you.','Forgiveness'],
+ ['Joshua 1:9','Haven’t I commanded you? Be strong and courageous. Don’t be afraid, neither be dismayed; for Yahweh your God is with you wherever you go.','Courage'],
+ ['Psalm 119:105','Your word is a lamp to my feet, and a light for my path.','Guidance'],
+ ['Galatians 6:9','Let us not be weary in doing good, for we will reap in due season, if we don’t give up.','Perseverance'],
+ ['1 Peter 5:7','Casting all your worries on him, because he cares for you.','Care'],
+ ['Lamentations 3:22–23','It is because of Yahweh’s loving kindnesses that we are not consumed, because his compassion doesn’t fail. They are new every morning. Great is your faithfulness.','Faithfulness'],
+ ['Psalm 37:5','Commit your way to Yahweh. Trust also in him, and he will do this.','Trust'],
+ ['Jeremiah 29:11','For I know the thoughts that I think toward you, says Yahweh, thoughts of peace, and not of evil, to give you hope and a future.','Hope'],
+ ['Psalm 56:3–4','When I am afraid, I will put my trust in you. In God, I praise his word. In God, I put my trust. I will not be afraid.','Trust'],
+ ['Colossians 3:15','Let the peace of Christ rule in your hearts, to which also you were called in one body; and be thankful.','Peace'],
+ ['Hebrews 11:1','Now faith is assurance of things hoped for, proof of things not seen.','Faith'],
+ ['John 3:16','For God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life.','Salvation'],
+ ['Ephesians 2:8–9','For by grace you have been saved through faith, and that not of yourselves; it is the gift of God, not of works, that no one would boast.','Grace'],
+ ['Psalm 103:2–3','Praise Yahweh, my soul, and don’t forget all his benefits; who forgives all your sins; who heals all your diseases.','Healing'],
+ ['James 1:2–4','Count it all joy, my brothers, when you fall into various temptations, knowing that the testing of your faith produces endurance.','Trials'],
+ ['Isaiah 40:31','But those who wait for Yahweh will renew their strength. They will mount up with wings like eagles.','Strength'],
+ ['1 Corinthians 13:4–7','Love is patient and is kind. Love doesn’t envy. Love doesn’t brag, is not proud, and endures all things.','Love']
 ];
-const OPENINGS=['Heavenly Father','Faithful God','Lord Jesus','Gracious Father','God of hope','Merciful Lord','Loving Father','Almighty God'];
-const PRAISE=['thank You that Your mercy is new every morning','I praise You because You remain faithful in every season','thank You that Your presence is nearer than my fear','I worship You as my refuge, strength, and provider','thank You for loving me before I knew how to seek You','I honour You because Your wisdom is higher than mine'];
-const NEEDS=['Give me wisdom for the decisions before me','Replace my fear with steady trust','Strengthen me where I feel weak and discouraged','Help me forgive freely and respond with grace','Provide what is needed and teach me to depend on You','Guard my thoughts and fill me with Your peace','Lead my family and keep our home centred on Christ','Use today’s challenges to shape me into the likeness of Jesus','Show me who needs encouragement and give me the right words','Teach me to wait faithfully without losing hope'];
-const ACTIONS=['Help me take one obedient step today','Let my words carry kindness and truth','Make my life a quiet witness of the Gospel','Teach me to notice Your goodness in ordinary moments','Help me serve without seeking recognition','Give me courage to do what is right even when it is difficult','Keep me humble, teachable, and ready to listen'];
-const CLOSINGS=['In Jesus’ name, Amen.','I place this day into Your faithful hands. Amen.','Lead me and be glorified through my life today. Amen.','Thank You for hearing me and staying near. In Jesus’ name, Amen.','May Your will be done in me and through me. Amen.'];
-const CAPTIONS=[
- ref=>`Today’s reminder from ${ref}: God is present, faithful, and still working.`,
- ref=>`Hold on to this truth from ${ref}. You are not walking through today alone.`,
- ref=>`${ref} is a good verse to carry into prayer today.`,
- ref=>`Pause, breathe, and let the promise of ${ref} settle your heart.`,
- ref=>`Someone may need this encouragement from ${ref} today.`
-];
+const OPENINGS=['Heavenly Father','Faithful God','Lord Jesus','Gracious Father','God of hope','Merciful Lord','Loving Father','Almighty God','Holy God','Compassionate Father'];
+const PRAISE=['thank You that Your mercy is new every morning','I praise You because You remain faithful in every season','thank You that Your presence is nearer than my fear','I worship You as my refuge, strength, and provider','thank You for loving me before I knew how to seek You','I honour You because Your wisdom is higher than mine','I praise You for salvation and new life in Christ','thank You that Your Word remains true when circumstances change'];
+const NEEDS=['Give me wisdom for the decisions before me','Replace my fear with steady trust','Strengthen me where I feel weak and discouraged','Help me forgive freely and respond with grace','Provide what is needed and teach me to depend on You','Guard my thoughts and fill me with Your peace','Lead my family and keep our home centred on Christ','Use today’s challenges to shape me into the likeness of Jesus','Show me who needs encouragement and give me the right words','Teach me to wait faithfully without losing hope','Bring healing and comfort to those who are suffering','Renew my joy and restore my desire to seek You'];
+const ACTIONS=['Help me take one obedient step today','Let my words carry kindness and truth','Make my life a quiet witness of the Gospel','Teach me to notice Your goodness in ordinary moments','Help me serve without seeking recognition','Give me courage to do what is right even when it is difficult','Keep me humble, teachable, and ready to listen','Help me choose prayer before worry','Teach me to extend the grace I have received','Let my work and relationships honour You'];
+const CLOSINGS=['In Jesus’ name, Amen.','I place this day into Your faithful hands. Amen.','Lead me and be glorified through my life today. Amen.','Thank You for hearing me and staying near. In Jesus’ name, Amen.','May Your will be done in me and through me. Amen.','Keep my heart faithful and my eyes fixed on Christ. Amen.'];
+const CAPTION_STARTS=['Today’s reminder','Hold on to this truth','Carry this promise with you','Pause and receive this encouragement','Someone may need this today','Let this Scripture steady your heart','A truth worth remembering','God’s Word for the journey ahead'];
+const CAPTION_ENDS=['God is present, faithful, and still working.','You are not walking through today alone.','Bring this truth into prayer and daily life.','Read it slowly and let it shape your next step.','Share it with someone who needs encouragement.','Trust God with what you cannot yet see.','Let faith speak louder than fear today.','His Word remains dependable in every season.'];
 
-function read(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return []}}
+function read(key){try{const x=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(x)?x:[]}catch{return []}}
 function write(key,val){localStorage.setItem(key,JSON.stringify(val))}
 function clean(v=''){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
-function sig(item){return clean([item.type,item.reference,item.body,item.caption].join('|'))}
-function used(){return new Set([...read(HISTORY_KEY),...read(POSTED_KEY).map(sig)])}
-function remember(item){const s=sig(item);if(!s)return;const arr=read(HISTORY_KEY).filter(x=>x!==s);arr.unshift(s);write(HISTORY_KEY,arr.slice(0,MAX_HISTORY))}
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
-function shuffled(arr){return [...arr].sort(()=>Math.random()-.5)}
-function state(){return window.socialStudioState||null}
-function sync(){if(typeof window.socialStudioSync==='function')window.socialStudioSync()}
-function toast(m){if(typeof window.toast==='function')window.toast(m)}
+function notify(message){if(typeof window.toast==='function')window.toast(message)}
+function setField(id,value,event='input'){const el=$(id);if(!el)return false;el.value=value;el.dispatchEvent(new Event(event,{bubbles:true}));return true}
+function currentType(){return $('#socialType')?.value==='prayer'?'prayer':'verse'}
+function tokenSet(text){return new Set(clean(text).split(' ').filter(x=>x.length>3))}
+function similarity(a,b){const A=tokenSet(a),B=tokenSet(b);if(!A.size||!B.size)return 0;let common=0;A.forEach(x=>{if(B.has(x))common++});return common/(A.size+B.size-common)}
+function recentPrayerBodies(){return [...read(PRAYER_HISTORY),...read(POSTED_HISTORY).filter(x=>x.type==='prayer')].map(x=>x.body||'').slice(0,120)}
+function remember(key,item){const arr=read(key).filter(x=>x.signature!==item.signature);arr.unshift(item);write(key,arr.slice(0,MAX_HISTORY))}
+function postedReferences(){return new Set(read(POSTED_HISTORY).filter(x=>x.type==='verse').map(x=>x.reference))}
+function usedVerseReferences(){return new Set(read(VERSE_HISTORY).map(x=>x.reference))}
 
 function createVerse(){
- const seen=used();
- for(const v of shuffled(VERSES)){
-  for(const makeCaption of shuffled(CAPTIONS)){
-   const item={type:'verse',reference:v[0],body:v[1],caption:makeCaption(v[0]),hashtags:`#BibleVerse #${v[2][0].toUpperCase()+v[2].slice(1)} #Faith #DeMayoBibleStudies`};
-   if(!seen.has(sig(item)))return item;
-  }
- }
- const v=pick(VERSES);return {type:'verse',reference:v[0],body:v[1],caption:pick(CAPTIONS)(v[0]),hashtags:'#BibleVerse #Faith #DeMayoBibleStudies'};
+ let unavailable=new Set([...usedVerseReferences(),...postedReferences()]);
+ let available=VERSES.filter(v=>!unavailable.has(v[0]));
+ if(!available.length){write(VERSE_HISTORY,[]);unavailable=postedReferences();available=VERSES.filter(v=>!unavailable.has(v[0]));}
+ if(!available.length)available=VERSES;
+ const verse=pick(available),caption=`${pick(CAPTION_STARTS)} from ${verse[0]}: ${pick(CAPTION_ENDS)}`;
+ return {type:'verse',reference:verse[0],body:verse[1],caption,hashtags:`#BibleVerse #${verse[2]} #Faith #ChristianEncouragement #DeMayoBibleStudies`,signature:clean(`verse|${verse[0]}|${verse[1]}|${caption}`),createdAt:Date.now()};
 }
 function createPrayer(){
- const seen=used();
- for(let i=0;i<120;i++){
+ const recent=recentPrayerBodies();
+ for(let attempt=0;attempt<100;attempt++){
   const verse=pick(VERSES);
   const body=`${pick(OPENINGS)}, ${pick(PRAISE)}.\n\n${pick(NEEDS)}. ${pick(ACTIONS)}.\n\nYour Word in ${verse[0]} reminds me: “${verse[1]}”\n\n${pick(CLOSINGS)}`;
-  const item={type:'prayer',reference:'Prayer',body,caption:`A prayer inspired by ${verse[0]}\n\n${body}`,hashtags:'#Prayer #Faith #ChristianEncouragement #DeMayoBibleStudies'};
-  if(!seen.has(sig(item)))return item;
+  const signature=clean(`prayer|${body}`);
+  const exact=read(PRAYER_HISTORY).some(x=>x.signature===signature)||read(POSTED_HISTORY).some(x=>x.signature===signature);
+  const tooSimilar=recent.some(old=>similarity(old,body)>.82);
+  if(!exact&&!tooSimilar)return {type:'prayer',reference:'Prayer',sourceReference:verse[0],body,caption:`A prayer inspired by ${verse[0]}\n\n${body}`,hashtags:'#Prayer #Faith #Jesus #ChristianEncouragement #DeMayoBibleStudies',signature,createdAt:Date.now()};
  }
  const verse=pick(VERSES),body=`${pick(OPENINGS)}, ${pick(PRAISE)}.\n\n${pick(NEEDS)}. ${pick(ACTIONS)}.\n\n${pick(CLOSINGS)}`;
- return {type:'prayer',reference:'Prayer',body,caption:`A prayer inspired by ${verse[0]}\n\n${body}`,hashtags:'#Prayer #Faith #DeMayoBibleStudies'};
+ return {type:'prayer',reference:'Prayer',sourceReference:verse[0],body,caption:`A prayer inspired by ${verse[0]}\n\n${body}`,hashtags:'#Prayer #Faith #DeMayoBibleStudies',signature:clean(`prayer|${body}`),createdAt:Date.now()};
 }
-function apply(item,message){
- const s=state();if(!s)return false;
- Object.assign(s,{type:item.type,reference:item.reference,verseText:item.type==='verse'?item.body:'',prayerText:item.type==='prayer'?item.body:'',caption:item.caption,hashtags:item.hashtags});
- remember(item);sync();toast(message);return true;
+function apply(item){
+ setField('#socialType',item.type,'change');
+ if(item.type==='verse'){
+  setField('#socialVerse',item.body);setField('#socialReference',item.reference);
+ }else setField('#socialPrayer',item.body);
+ setField('#socialCaption',item.caption);setField('#socialHashtags',item.hashtags);
+ remember(item.type==='prayer'?PRAYER_HISTORY:VERSE_HISTORY,item);
+ renderPanel();
+ notify(item.type==='prayer'?'Fresh prayer created':'Fresh Bible verse post created');
 }
-function generate(type){return apply(type==='prayer'?createPrayer():createVerse(),type==='prayer'?'Fresh prayer created':'Fresh Bible verse post created')}
-function surprise(){return generate(Math.random()<.5?'prayer':'verse')}
-function selectedType(){return state()?.type==='prayer'?'prayer':'verse'}
-function markPosted(){
- const s=state();if(!s)return;
- const type=selectedType(),body=type==='prayer'?s.prayerText:s.verseText;
- if(!String(body||'').trim())return toast('Create a post first.');
- const item={type,reference:type==='prayer'?'Prayer':s.reference,body,caption:s.caption||'',hashtags:s.hashtags||'',postedAt:Date.now()};
- const arr=read(POSTED_KEY).filter(x=>sig(x)!==sig(item));arr.unshift(item);write(POSTED_KEY,arr.slice(0,300));remember(item);toast('Marked as posted. This content will be avoided.');renderPanel();
+function generate(type){apply(type==='prayer'?createPrayer():createVerse())}
+function surprise(){generate(Math.random()<.5?'prayer':'verse')}
+function currentItem(){
+ const type=currentType();const body=type==='prayer'?$('#socialPrayer')?.value:$('#socialVerse')?.value;
+ if(!String(body||'').trim())return null;
+ const reference=type==='prayer'?'Prayer':($('#socialReference')?.value||'');
+ const caption=$('#socialCaption')?.value||'',hashtags=$('#socialHashtags')?.value||'';
+ return {type,reference,body:String(body).trim(),caption,hashtags,signature:clean(`${type}|${reference}|${body}|${caption}`),postedAt:Date.now()};
 }
+function markPosted(){const item=currentItem();if(!item)return notify('Create a post first.');remember(POSTED_HISTORY,item);notify('Marked as posted. Social Studio will avoid it.');renderPanel()}
 function renderPanel(){
  const controls=$('.social-controls');if(!controls)return;
  let panel=$('#dmSocialV2Panel');if(!panel){panel=document.createElement('article');panel.id='dmSocialV2Panel';panel.className='card';controls.insertAdjacentElement('afterend',panel)}
- const posted=read(POSTED_KEY),history=read(HISTORY_KEY);
- panel.innerHTML=`<div class="section-heading compact"><div><span class="eyebrow">SOCIAL STUDIO 2.0</span><h3>✨ Offline fresh-content engine</h3></div></div><p class="small-note">No API. Prayer and Bible verse generation use separate local memory and avoid previously generated or posted content.</p><div class="social-auto-actions"><button class="primary" id="dmSocialFreshSelected">Generate fresh ${selectedType()==='prayer'?'prayer':'Bible verse'}</button><button class="ghost" id="dmSocialMarkPosted">✅ Mark current as posted</button></div><p><b>${history.length}</b> ideas remembered · <b>${posted.length}</b> posted items protected</p>`;
- $('#dmSocialFreshSelected').onclick=()=>generate(selectedType());$('#dmSocialMarkPosted').onclick=markPosted;
+ const type=currentType(),verseCount=read(VERSE_HISTORY).length,prayerCount=read(PRAYER_HISTORY).length,posted=read(POSTED_HISTORY).length;
+ panel.innerHTML=`<div class="section-heading compact"><div><span class="eyebrow">SOCIAL STUDIO 2.1</span><h3>✨ Offline fresh-content engine</h3></div></div><p class="small-note">No API. Bible references rotate before repeating, while prayers are checked for exact and near-duplicate wording.</p><div class="social-auto-actions"><button class="primary" id="dmSocialFreshSelected">Generate fresh ${type==='prayer'?'prayer':'Bible verse'}</button><button class="ghost" id="dmSocialMarkPosted">✅ Mark current as posted</button></div><p><b>${verseCount}</b> verses used · <b>${prayerCount}</b> prayers used · <b>${posted}</b> posted items protected</p>`;
 }
-function bind(id,fn){const b=$('#'+id);if(!b)return false;b.onclick=e=>{e?.preventDefault?.();fn();renderPanel()};return true}
-function install(){
- clearTimeout(installTimer);
- const controls=$('.social-controls');if(!controls||controls===installedControls)return;
- const ok1=bind('socialGenerateVerse',()=>generate('verse'));
- const ok2=bind('socialGeneratePrayer',()=>generate('prayer'));
- const ok3=bind('socialGenerateComplete',surprise);
- if(!ok1&&!ok2&&!ok3)return;
- installedControls=controls;renderPanel();
- const fb=$('#socialFacebook');if(fb&&!fb.dataset.dmV2Posted){fb.addEventListener('click',markPosted,{capture:true});fb.dataset.dmV2Posted='1'}
+function handleClick(event){
+ const button=event.target.closest('button');if(!button)return;
+ const id=button.id;
+ if(!['socialGenerateVerse','socialGeneratePrayer','socialGenerateComplete','dmSocialFreshSelected','dmSocialMarkPosted'].includes(id))return;
+ event.preventDefault();event.stopImmediatePropagation();
+ if(id==='socialGenerateVerse')generate('verse');
+ else if(id==='socialGeneratePrayer')generate('prayer');
+ else if(id==='socialGenerateComplete')surprise();
+ else if(id==='dmSocialFreshSelected')generate(currentType());
+ else markPosted();
 }
-function scheduleInstall(){clearTimeout(installTimer);installTimer=setTimeout(install,40)}
-window.addEventListener('load',scheduleInstall);
-window.addEventListener('hashchange',scheduleInstall);
-scheduleInstall();
+function schedulePanel(){setTimeout(renderPanel,60)}
+document.addEventListener('click',handleClick,true);
+document.addEventListener('change',e=>{if(e.target?.id==='socialType')schedulePanel()});
+document.addEventListener('click',e=>{if(e.target.closest('[data-page="socialstudio"]'))schedulePanel()});
+window.addEventListener('hashchange',schedulePanel);
+window.addEventListener('load',schedulePanel);
+schedulePanel();
 })();
