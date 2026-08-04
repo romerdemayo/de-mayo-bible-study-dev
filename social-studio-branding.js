@@ -31,27 +31,31 @@ function brandedCaption(text){
 function updateCaption(force=false){
  const field=$('#socialCaption');if(!field||applying)return;
  const next=brandedCaption(field.value);
- if(!force&&next===field.value)return;
+ if(!force&&next===field.value){decoratePreview();return}
  applying=true;field.value=next;field.dispatchEvent(new Event('input',{bubbles:true}));applying=false;
- renderClickablePreview();
+ decoratePreview();
 }
-function renderClickablePreview(){
+function ensureLabel(id,text,target){
+ let label=$('#'+id);
+ if(!label){
+  label=document.createElement('span');
+  label.id=id;
+  label.className='eyebrow';
+  label.style.display='block';
+  label.style.margin='14px 0 6px';
+  target.parentNode.insertBefore(label,target);
+ }
+ label.textContent=text;
+}
+function decoratePreview(){
  const preview=$('.social-post-preview');
  if(!preview)return;
- let link=$('#dmSocialMainAppLink');
- if(!link){
-  link=document.createElement('a');
-  link.id='dmSocialMainAppLink';
-  link.href=MAIN_URL;
-  link.target='_blank';
-  link.rel='noopener noreferrer';
-  link.className='text-link';
-  link.style.display='inline-block';
-  link.style.marginTop='10px';
-  preview.appendChild(link);
- }
- link.textContent=`📖 Open De Mayo Bible Studies — ${MAIN_URL}`;
- link.hidden=!readSettings().enabled;
+ const duplicate=$('#dmSocialMainAppLink');
+ if(duplicate)duplicate.remove();
+ const caption=$('#socialPreviewCaption');
+ const hashtags=$('#socialPreviewHashtags');
+ if(caption)ensureLabel('dmSocialCaptionLabel','CAPTION',caption);
+ if(hashtags)ensureLabel('dmSocialHashtagLabel','HASHTAGS',hashtags);
 }
 function renderSettings(){
  const controls=$('.social-controls');if(!controls)return;
@@ -61,17 +65,17 @@ function renderSettings(){
  card.innerHTML=`<div class="section-heading compact"><div><span class="eyebrow">MINISTRY BRANDING</span><h3>📖 Bring readers back to the Bible app</h3></div></div>
  <label class="check-row"><input type="checkbox" id="dmBrandingEnabled" ${settings.enabled?'checked':''}> Include the De Mayo Bible Studies link in captions</label>
  <label>Caption footer style<select id="dmBrandingStyle"><option value="invitation" ${settings.style==='invitation'?'selected':''}>Invitation</option><option value="simple" ${settings.style==='simple'?'selected':''}>Simple</option><option value="minimal" ${settings.style==='minimal'?'selected':''}>Minimal</option></select></label>
- <p class="small-note">The exact production link below is used. Facebook makes a pasted full URL clickable automatically.</p>
+ <p class="small-note">The production link appears once inside the caption. Facebook will make the full URL clickable after posting.</p>
  <p><a href="${MAIN_URL}" target="_blank" rel="noopener noreferrer" class="text-link">${MAIN_URL}</a></p>
  <div class="social-auto-actions"><button class="ghost" id="dmApplyBranding">Apply to current caption</button></div>`;
- $('#dmBrandingEnabled').onchange=e=>{const next={...readSettings(),enabled:e.target.checked};saveSettings(next);updateCaption(true);renderClickablePreview();notify(e.target.checked?'Website link enabled':'Website link removed')};
+ $('#dmBrandingEnabled').onchange=e=>{const next={...readSettings(),enabled:e.target.checked};saveSettings(next);updateCaption(true);notify(e.target.checked?'Website link enabled':'Website link removed')};
  $('#dmBrandingStyle').onchange=e=>{const next={...readSettings(),style:e.target.value};saveSettings(next);updateCaption(true);notify('Caption footer updated')};
  $('#dmApplyBranding').onclick=e=>{e.preventDefault();updateCaption(true);notify('Production website link added to caption')};
- renderClickablePreview();
+ decoratePreview();
 }
-function schedule(){clearTimeout(timer);timer=setTimeout(()=>{renderSettings();updateCaption();renderClickablePreview()},80)}
+function schedule(){clearTimeout(timer);timer=setTimeout(()=>{renderSettings();updateCaption();decoratePreview()},80)}
 
-document.addEventListener('input',e=>{if(e.target?.id==='socialCaption'&&!applying)schedule()});
+document.addEventListener('input',e=>{if((e.target?.id==='socialCaption'||e.target?.id==='socialHashtags')&&!applying)schedule()});
 document.addEventListener('change',e=>{if(e.target?.id==='socialType')schedule()});
 document.addEventListener('click',e=>{if(e.target.closest('[data-page="socialstudio"]'))schedule()});
 window.addEventListener('hashchange',schedule);
