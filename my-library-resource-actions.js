@@ -5,6 +5,7 @@ const RESOURCE_KEY='dm_unifiedCreatorResources';
 const OPEN_KEY='dm_libraryOpenResource';
 const $=s=>document.querySelector(s);
 const OUTPUTS=[['social','📱','Social Posts'],['reel','🎬','Reels'],['presentation','📊','Presentations'],['handout','📄','Handouts'],['prayer','🙏','Prayers'],['kids','🧒','Kids Lessons'],['smallgroup','👥','Small Groups']];
+function ensureOutputStudio(){if(window.DM_RESOURCE_OUTPUTS||document.querySelector('script[data-dm-output-studio]'))return;const s=document.createElement('script');s.src='resource-output-studio.js?v=1231';s.defer=true;s.dataset.dmOutputStudio='1';document.head.appendChild(s)}
 function read(){try{const v=JSON.parse(localStorage.getItem(RESOURCE_KEY)||'[]');return Array.isArray(v)?v:[]}catch{return []}}
 function clean(v=''){return String(v).trim().toLowerCase()}
 function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -17,7 +18,7 @@ function matchResource(card){
 }
 function openResource(resource,index){localStorage.setItem(OPEN_KEY,JSON.stringify({id:resource.id||null,index,title:resource.title||'',updatedAt:resource.updatedAt||0}));location.hash='aicreator'}
 function openOutputChooser(resource,index){
- let wrap=$('#dmResourceOutputModal');if(wrap)wrap.remove();
+ ensureOutputStudio();let wrap=$('#dmResourceOutputModal');if(wrap)wrap.remove();
  wrap=document.createElement('div');wrap.id='dmResourceOutputModal';wrap.className='dm-capture-modal';
  const counts=outputCounts(resource);
  wrap.innerHTML=`<div class="dm-capture-dialog"><h2>✨ Create Output</h2><p><b>${esc(resource.title||'Saved resource')}</b></p><div class="dm-resource-output-list">${OUTPUTS.map(([key,icon,label])=>`<button class="ghost" data-output-type="${key}"><span>${icon}</span><b>${label}</b><small>${counts[key]||0} created</small></button>`).join('')}</div><p class="dm-ai-note">Social posts, reel scripts, and prayers are available now. Presentation, handout, kids lesson, and small-group outputs follow in the next builds.</p><button class="ghost wide" id="dmResourceOutputClose">Close</button></div>`;
@@ -25,7 +26,8 @@ function openOutputChooser(resource,index){
  wrap.onclick=e=>{if(e.target===wrap)wrap.remove()};$('#dmResourceOutputClose').onclick=()=>wrap.remove();
  wrap.querySelectorAll('[data-output-type]').forEach(b=>b.onclick=()=>{
   const type=b.dataset.outputType;
-  if(window.DM_RESOURCE_OUTPUTS?.open){window.DM_RESOURCE_OUTPUTS.open(resource,index,type)}else window.toast?.('Output Studio is still loading. Please try again.');
+  if(window.DM_RESOURCE_OUTPUTS?.open){window.DM_RESOURCE_OUTPUTS.open(resource,index,type);return}
+  window.toast?.('Output Studio is loading. Please tap again in a moment.');
  });
 }
 function cardHub(card,resource,index){
@@ -43,7 +45,7 @@ function addStyles(){if($('#dmResourceHubStyles'))return;const style=document.cr
 #dmMinistryPacksSection,.dm-pack-library-section{display:none!important}.dm-resource-hub{border-top:1px solid var(--border,#d7dedb);margin-top:14px;padding-top:12px}.dm-resource-meta{display:flex;gap:8px;flex-wrap:wrap}.dm-resource-meta span{font-size:.78rem;padding:4px 8px;border-radius:999px;background:var(--surface-2,#eef3f1)}.dm-resource-hub h4{margin:12px 0 8px}.dm-resource-output-counts{display:flex;gap:8px;flex-wrap:wrap}.dm-resource-output-counts span{min-width:48px;padding:6px 8px;border:1px solid var(--border,#d7dedb);border-radius:10px;text-align:center}.dm-resource-hub-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.dm-resource-output-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}.dm-resource-output-list button{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;text-align:left;align-items:center}.dm-resource-output-list button span{grid-row:1/3;font-size:1.4rem}.dm-resource-output-list small{opacity:.7}@media(max-width:600px){.dm-resource-output-list{grid-template-columns:1fr}.dm-resource-hub-actions>*{flex:1 1 100%}}`;
  document.head.appendChild(style)}
 function enhance(){
- if(location.hash!=='#mylibrary')return false;addStyles();$('#dmMinistryPacksSection')?.remove();
+ if(location.hash!=='#mylibrary')return false;ensureOutputStudio();addStyles();$('#dmMinistryPacksSection')?.remove();
  document.querySelectorAll('.dm-library-recent-title h3').forEach(h=>{if(/recently added/i.test(h.textContent))h.textContent='My Resources'});
  const cards=[...document.querySelectorAll('.dm-library-card')];if(!cards.length)return false;
  cards.forEach(card=>{const category=clean(card.querySelector('small')?.textContent);if(!category.includes('resource'))return;const found=matchResource(card);if(found)cardHub(card,found.resource,found.index)});return true
@@ -55,5 +57,5 @@ function openPending(){
  if(index<0)return false;const saved=document.querySelector(`#dmAiSaved [data-load="${index}"]`);if(!saved)return false;localStorage.removeItem(OPEN_KEY);saved.click();return true
 }
 function retry(fn,attempt=0){if(fn())return;if(attempt<25)setTimeout(()=>retry(fn,attempt+1),100)}
-window.addEventListener('load',()=>{retry(enhance);retry(openPending)});window.addEventListener('hashchange',()=>{retry(enhance);retry(openPending)});window.addEventListener('dm-resource-output-saved',()=>setTimeout(()=>retry(enhance),60));document.addEventListener('click',e=>{if(e.target.closest('#dmMyLibraryNav,#dmAiLibrary'))setTimeout(()=>retry(enhance),80)});
+ensureOutputStudio();window.addEventListener('load',()=>{retry(enhance);retry(openPending)});window.addEventListener('hashchange',()=>{retry(enhance);retry(openPending)});window.addEventListener('dm-resource-output-saved',()=>setTimeout(()=>retry(enhance),60));document.addEventListener('click',e=>{if(e.target.closest('#dmMyLibraryNav,#dmAiLibrary'))setTimeout(()=>retry(enhance),80)});
 })();
