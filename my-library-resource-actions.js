@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies - Build 1.23.0 Resource Hub */
+/* De Mayo Bible Studies - Build 1.23.1 Resource Hub */
 (function(){
 'use strict';
 const RESOURCE_KEY='dm_unifiedCreatorResources';
@@ -6,7 +6,6 @@ const OPEN_KEY='dm_libraryOpenResource';
 const $=s=>document.querySelector(s);
 const OUTPUTS=[['social','📱','Social Posts'],['reel','🎬','Reels'],['presentation','📊','Presentations'],['handout','📄','Handouts'],['prayer','🙏','Prayers'],['kids','🧒','Kids Lessons'],['smallgroup','👥','Small Groups']];
 function read(){try{const v=JSON.parse(localStorage.getItem(RESOURCE_KEY)||'[]');return Array.isArray(v)?v:[]}catch{return []}}
-function write(v){localStorage.setItem(RESOURCE_KEY,JSON.stringify(v))}
 function clean(v=''){return String(v).trim().toLowerCase()}
 function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function outputCounts(resource){const list=Array.isArray(resource.outputs)?resource.outputs:[];return Object.fromEntries(OUTPUTS.map(([key])=>[key,list.filter(x=>x.type===key).length]))}
@@ -21,10 +20,13 @@ function openOutputChooser(resource,index){
  let wrap=$('#dmResourceOutputModal');if(wrap)wrap.remove();
  wrap=document.createElement('div');wrap.id='dmResourceOutputModal';wrap.className='dm-capture-modal';
  const counts=outputCounts(resource);
- wrap.innerHTML=`<div class="dm-capture-dialog"><h2>✨ Create Output</h2><p><b>${esc(resource.title||'Saved resource')}</b></p><div class="dm-resource-output-list">${OUTPUTS.map(([key,icon,label])=>`<button class="ghost" data-output-type="${key}"><span>${icon}</span><b>${label}</b><small>${counts[key]||0} created</small></button>`).join('')}</div><p class="dm-ai-note">Output generation will be connected in Builds 1.23.1–1.23.3. This Resource Hub now keeps the selected resource ready for those outputs.</p><button class="ghost wide" id="dmResourceOutputClose">Close</button></div>`;
+ wrap.innerHTML=`<div class="dm-capture-dialog"><h2>✨ Create Output</h2><p><b>${esc(resource.title||'Saved resource')}</b></p><div class="dm-resource-output-list">${OUTPUTS.map(([key,icon,label])=>`<button class="ghost" data-output-type="${key}"><span>${icon}</span><b>${label}</b><small>${counts[key]||0} created</small></button>`).join('')}</div><p class="dm-ai-note">Social posts, reel scripts, and prayers are available now. Presentation, handout, kids lesson, and small-group outputs follow in the next builds.</p><button class="ghost wide" id="dmResourceOutputClose">Close</button></div>`;
  document.body.appendChild(wrap);
  wrap.onclick=e=>{if(e.target===wrap)wrap.remove()};$('#dmResourceOutputClose').onclick=()=>wrap.remove();
- wrap.querySelectorAll('[data-output-type]').forEach(b=>b.onclick=()=>{localStorage.setItem('dm_resourceHubPendingOutput',JSON.stringify({resourceId:resource.id||null,index,type:b.dataset.outputType,createdAt:Date.now()}));window.toast?.(`${b.textContent.trim()} selected for the next output build.`);wrap.remove()});
+ wrap.querySelectorAll('[data-output-type]').forEach(b=>b.onclick=()=>{
+  const type=b.dataset.outputType;
+  if(window.DM_RESOURCE_OUTPUTS?.open){window.DM_RESOURCE_OUTPUTS.open(resource,index,type)}else window.toast?.('Output Studio is still loading. Please try again.');
+ });
 }
 function cardHub(card,resource,index){
  card.classList.add('dm-resource-hub-card');
@@ -53,5 +55,5 @@ function openPending(){
  if(index<0)return false;const saved=document.querySelector(`#dmAiSaved [data-load="${index}"]`);if(!saved)return false;localStorage.removeItem(OPEN_KEY);saved.click();return true
 }
 function retry(fn,attempt=0){if(fn())return;if(attempt<25)setTimeout(()=>retry(fn,attempt+1),100)}
-window.addEventListener('load',()=>{retry(enhance);retry(openPending)});window.addEventListener('hashchange',()=>{retry(enhance);retry(openPending)});document.addEventListener('click',e=>{if(e.target.closest('#dmMyLibraryNav,#dmAiLibrary'))setTimeout(()=>retry(enhance),80)});
+window.addEventListener('load',()=>{retry(enhance);retry(openPending)});window.addEventListener('hashchange',()=>{retry(enhance);retry(openPending)});window.addEventListener('dm-resource-output-saved',()=>setTimeout(()=>retry(enhance),60));document.addEventListener('click',e=>{if(e.target.closest('#dmMyLibraryNav,#dmAiLibrary'))setTimeout(()=>retry(enhance),80)});
 })();
