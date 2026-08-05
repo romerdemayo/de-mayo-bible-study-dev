@@ -1,65 +1,57 @@
-/* De Mayo Bible Studies - Build 1.22.3a My Library exact resource actions */
+/* De Mayo Bible Studies - Build 1.23.0 Resource Hub */
 (function(){
 'use strict';
 const RESOURCE_KEY='dm_unifiedCreatorResources';
 const OPEN_KEY='dm_libraryOpenResource';
 const $=s=>document.querySelector(s);
-function readResources(){try{const v=JSON.parse(localStorage.getItem(RESOURCE_KEY)||'[]');return Array.isArray(v)?v:[]}catch{return []}}
+const OUTPUTS=[['social','📱','Social Posts'],['reel','🎬','Reels'],['presentation','📊','Presentations'],['handout','📄','Handouts'],['prayer','🙏','Prayers'],['kids','🧒','Kids Lessons'],['smallgroup','👥','Small Groups']];
+function read(){try{const v=JSON.parse(localStorage.getItem(RESOURCE_KEY)||'[]');return Array.isArray(v)?v:[]}catch{return []}}
+function write(v){localStorage.setItem(RESOURCE_KEY,JSON.stringify(v))}
 function clean(v=''){return String(v).trim().toLowerCase()}
+function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function outputCounts(resource){const list=Array.isArray(resource.outputs)?resource.outputs:[];return Object.fromEntries(OUTPUTS.map(([key])=>[key,list.filter(x=>x.type===key).length]))}
 function matchResource(card){
- const title=clean(card.querySelector('h3')?.textContent);
- if(!title)return null;
- const rows=readResources();
- let index=rows.findIndex(x=>clean(x.title)===title);
+ const title=clean(card.querySelector('h3')?.textContent);if(!title)return null;
+ const rows=read();let index=rows.findIndex(x=>clean(x.title)===title);
  if(index<0)index=rows.findIndex(x=>title.includes(clean(x.title))||clean(x.title).includes(title));
  return index>=0?{resource:rows[index],index}:null;
 }
-function openResource(resource,index){
- localStorage.setItem(OPEN_KEY,JSON.stringify({id:resource.id||null,index,title:resource.title||'',updatedAt:resource.updatedAt||0}));
- location.hash='aicreator';
+function openResource(resource,index){localStorage.setItem(OPEN_KEY,JSON.stringify({id:resource.id||null,index,title:resource.title||'',updatedAt:resource.updatedAt||0}));location.hash='aicreator'}
+function openOutputChooser(resource,index){
+ let wrap=$('#dmResourceOutputModal');if(wrap)wrap.remove();
+ wrap=document.createElement('div');wrap.id='dmResourceOutputModal';wrap.className='dm-capture-modal';
+ const counts=outputCounts(resource);
+ wrap.innerHTML=`<div class="dm-capture-dialog"><h2>✨ Create Output</h2><p><b>${esc(resource.title||'Saved resource')}</b></p><div class="dm-resource-output-list">${OUTPUTS.map(([key,icon,label])=>`<button class="ghost" data-output-type="${key}"><span>${icon}</span><b>${label}</b><small>${counts[key]||0} created</small></button>`).join('')}</div><p class="dm-ai-note">Output generation will be connected in Builds 1.23.1–1.23.3. This Resource Hub now keeps the selected resource ready for those outputs.</p><button class="ghost wide" id="dmResourceOutputClose">Close</button></div>`;
+ document.body.appendChild(wrap);
+ wrap.onclick=e=>{if(e.target===wrap)wrap.remove()};$('#dmResourceOutputClose').onclick=()=>wrap.remove();
+ wrap.querySelectorAll('[data-output-type]').forEach(b=>b.onclick=()=>{localStorage.setItem('dm_resourceHubPendingOutput',JSON.stringify({resourceId:resource.id||null,index,type:b.dataset.outputType,createdAt:Date.now()}));window.toast?.(`${b.textContent.trim()} selected for the next output build.`);wrap.remove()});
 }
-function createPack(resource,index){
- if(window.DM_MINISTRY_PACKS?.createFromResource){window.DM_MINISTRY_PACKS.createFromResource(resource,index);return}
- window.toast?.('Ministry Pack engine is still loading. Please try again.');
+function cardHub(card,resource,index){
+ card.classList.add('dm-resource-hub-card');
+ const category=card.querySelector('small');if(category)category.textContent=`My Resources · ${resource.type||'resource'}`;
+ let hub=card.querySelector('.dm-resource-hub');if(hub)hub.remove();hub=document.createElement('section');hub.className='dm-resource-hub';
+ const counts=outputCounts(resource);
+ hub.innerHTML=`<div class="dm-resource-meta"><span>${esc(resource.reference||'No Scripture selected')}</span><span>${esc(resource.audience||'Personal')}</span><span>${esc(resource.language||'English')}</span></div><h4>Outputs</h4><div class="dm-resource-output-counts">${OUTPUTS.map(([key,icon,label])=>`<span title="${label}">${icon} <b>${counts[key]||0}</b></span>`).join('')}</div><div class="dm-resource-hub-actions"><button class="ghost" data-resource-open>📖 Open Resource</button><button class="primary" data-resource-output>✨ Create Output</button></div>`;
+ card.appendChild(hub);
+ const old=card.querySelector('[data-open-cat]');if(old)old.parentElement?.remove();
+ hub.querySelector('[data-resource-open]').onclick=e=>{e.preventDefault();openResource(resource,index)};
+ hub.querySelector('[data-resource-output]').onclick=e=>{e.preventDefault();openOutputChooser(resource,index)};
 }
+function addStyles(){if($('#dmResourceHubStyles'))return;const style=document.createElement('style');style.id='dmResourceHubStyles';style.textContent=`
+#dmMinistryPacksSection,.dm-pack-library-section{display:none!important}.dm-resource-hub{border-top:1px solid var(--border,#d7dedb);margin-top:14px;padding-top:12px}.dm-resource-meta{display:flex;gap:8px;flex-wrap:wrap}.dm-resource-meta span{font-size:.78rem;padding:4px 8px;border-radius:999px;background:var(--surface-2,#eef3f1)}.dm-resource-hub h4{margin:12px 0 8px}.dm-resource-output-counts{display:flex;gap:8px;flex-wrap:wrap}.dm-resource-output-counts span{min-width:48px;padding:6px 8px;border:1px solid var(--border,#d7dedb);border-radius:10px;text-align:center}.dm-resource-hub-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.dm-resource-output-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}.dm-resource-output-list button{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;text-align:left;align-items:center}.dm-resource-output-list button span{grid-row:1/3;font-size:1.4rem}.dm-resource-output-list small{opacity:.7}@media(max-width:600px){.dm-resource-output-list{grid-template-columns:1fr}.dm-resource-hub-actions>*{flex:1 1 100%}}`;
+ document.head.appendChild(style)}
 function enhance(){
- if(location.hash!=='#mylibrary')return false;
- const cards=[...document.querySelectorAll('.dm-library-card')];
- if(!cards.length)return false;
- cards.forEach(card=>{
-  const category=clean(card.querySelector('small')?.textContent);
-  if(category!=='resources')return;
-  const found=matchResource(card);if(!found)return;
-  const actions=card.querySelector('div:last-child')||card;
-  let open=actions.querySelector('[data-dm-open-exact-resource]');
-  if(!open){
-   const old=actions.querySelector('[data-open-cat]');
-   open=old||document.createElement('button');
-   open.className='ghost';open.textContent='Open resource';open.dataset.dmOpenExactResource='1';
-   if(!old)actions.appendChild(open);
-  }
-  open.onclick=e=>{e.preventDefault();e.stopPropagation();openResource(found.resource,found.index)};
-  if(!actions.querySelector('[data-dm-library-pack]')){
-   const pack=document.createElement('button');pack.className='ghost';pack.textContent='🎁 Create Ministry Pack';pack.dataset.dmLibraryPack='1';
-   pack.onclick=e=>{e.preventDefault();e.stopPropagation();createPack(found.resource,found.index)};
-   actions.appendChild(pack);
-  }
- });
- return true;
+ if(location.hash!=='#mylibrary')return false;addStyles();$('#dmMinistryPacksSection')?.remove();
+ document.querySelectorAll('.dm-library-recent-title h3').forEach(h=>{if(/recently added/i.test(h.textContent))h.textContent='My Resources'});
+ const cards=[...document.querySelectorAll('.dm-library-card')];if(!cards.length)return false;
+ cards.forEach(card=>{const category=clean(card.querySelector('small')?.textContent);if(!category.includes('resource'))return;const found=matchResource(card);if(found)cardHub(card,found.resource,found.index)});return true
 }
 function openPending(){
- if(location.hash!=='#aicreator')return;
- let pending=null;try{pending=JSON.parse(localStorage.getItem(OPEN_KEY)||'null')}catch{}
- if(!pending)return;
- const rows=readResources();let index=Number.isInteger(pending.index)?pending.index:-1;
+ if(location.hash!=='#aicreator')return false;let pending=null;try{pending=JSON.parse(localStorage.getItem(OPEN_KEY)||'null')}catch{}
+ if(!pending)return false;const rows=read();let index=Number.isInteger(pending.index)?pending.index:-1;
  if(index<0||!rows[index]||(pending.id&&rows[index].id!==pending.id))index=rows.findIndex(x=>(pending.id&&x.id===pending.id)||clean(x.title)===clean(pending.title));
- if(index<0)return;
- const saved=document.querySelector(`#dmAiSaved [data-load="${index}"]`);
- if(saved){localStorage.removeItem(OPEN_KEY);saved.click();return true}
- return false;
+ if(index<0)return false;const saved=document.querySelector(`#dmAiSaved [data-load="${index}"]`);if(!saved)return false;localStorage.removeItem(OPEN_KEY);saved.click();return true
 }
-function retry(fn,attempt=0){if(fn())return;if(attempt<20)setTimeout(()=>retry(fn,attempt+1),100)}
-window.addEventListener('load',()=>{retry(enhance);retry(openPending)});
-window.addEventListener('hashchange',()=>{retry(enhance);retry(openPending)});
-document.addEventListener('click',e=>{if(e.target.closest('#dmMyLibraryNav,#dmAiLibrary'))setTimeout(()=>retry(enhance),80)});
+function retry(fn,attempt=0){if(fn())return;if(attempt<25)setTimeout(()=>retry(fn,attempt+1),100)}
+window.addEventListener('load',()=>{retry(enhance);retry(openPending)});window.addEventListener('hashchange',()=>{retry(enhance);retry(openPending)});document.addEventListener('click',e=>{if(e.target.closest('#dmMyLibraryNav,#dmAiLibrary'))setTimeout(()=>retry(enhance),80)});
 })();
