@@ -1,148 +1,88 @@
-/* De Mayo Bible Studies - Build 1.25.1e Premium Social Studio cleanup */
+/* De Mayo Bible Studies - Build 1.23.1d Premium Social Studio primary interface */
 (function(){
 'use strict';
-const $=s=>document.querySelector(s);
-function hideBlock(el){
- if(!el||el.id==='dmSocialDesigner'||el.closest?.('#dmSocialDesigner'))return;
- const block=el.closest?.('article.card,section.card,.card,.social-preview,.social-preview-card,.social-post-preview,.post-preview-card')||el.parentElement;
- if(block&&block.id!=='dmSocialDesigner'&&!block.closest?.('#dmSocialDesigner')){
-  block.hidden=true;
-  block.style.setProperty('display','none','important');
-  block.dataset.dmLegacySocialHidden='1';
- }
-}
-function hideControl(el,reason='legacy-control'){
- if(!el||el.closest?.('#dmSocialDesigner'))return;
+let timer=0;
+const $=(s,r=document)=>r.querySelector(s);
+
+function hideLegacy(el){
+ if(!el)return;
  el.hidden=true;
+ el.setAttribute('aria-hidden','true');
  el.style.setProperty('display','none','important');
- el.dataset.dmSocialHiddenReason=reason;
- const label=el.closest('label,.field,.form-field,.control-group,.social-field');
- if(label&&!label.querySelector('input:not([hidden]),select:not([hidden]),textarea:not([hidden]),button:not([hidden])')){
-  label.hidden=true;
-  label.style.setProperty('display','none','important');
+ el.dataset.dmLegacySocialHidden='1';
+}
+
+function showPanel(el){
+ if(!el)return;
+ el.hidden=false;
+ el.removeAttribute('aria-hidden');
+ el.style.removeProperty('display');
+ el.classList.add('dm-social-full-width-panel');
+ el.style.width='100%';
+ el.style.maxWidth='1220px';
+ el.style.marginLeft='auto';
+ el.style.marginRight='auto';
+}
+
+function placeAfter(anchor,panel){
+ if(!anchor||!panel)return anchor;
+ if(panel.parentElement!==anchor.parentElement||panel.previousElementSibling!==anchor){
+  anchor.insertAdjacentElement('afterend',panel);
  }
+ return panel;
 }
-function norm(text=''){
- return String(text).replace(/[\s\u00a0]+/g,' ').replace(/[✨⬇📤📋✅✏️🎨🎲🔄♻️🖼️📱]/g,'').trim().toLowerCase();
-}
-function controlText(el){return norm([el.textContent,el.value,el.title,el.getAttribute('aria-label'),el.name,el.id].filter(Boolean).join(' '))}
-function hideButton(btn){
- if(!btn||btn.dataset.dmKeepSocialAction==='1')return;
- hideControl(btn,'duplicate-action');
- btn.dataset.dmDuplicateSocialButton='1';
-}
-function actionOf(btn){
- const id=(btn.id||'').toLowerCase();
- const text=controlText(btn);
- const insideDesigner=!!btn.closest('#dmSocialDesigner');
- if(id==='dmdesignersave'||/^(save|download|export).*(png|image|graphic)$/.test(text)||/^(save png|download image|save image)$/.test(text))return 'save-image';
- if(id==='dmdesignershare'||/^(share|send).*(image|graphic)$/.test(text)||/^(share image|share graphic)$/.test(text))return 'share-image';
- if(id==='dmdesignersurprise'&&insideDesigner)return 'designer-random-theme';
- if(/copy.*caption|caption.*copy/.test(text))return 'copy-caption';
- if(/copy.*hashtag|hashtag.*copy/.test(text))return 'copy-hashtags';
- if(/copy.*(post|text|content)/.test(text))return 'copy-post';
- if(/facebook/.test(text)&&/(share|prepare|post)/.test(text))return 'facebook-share';
- if(/mark.*posted|already posted|shared already/.test(text))return 'mark-posted';
- if(/generate.*prayer|fresh prayer|new prayer/.test(text))return 'generate-prayer';
- if(/generate.*(bible verse|scripture)|fresh bible verse|new bible verse/.test(text))return 'generate-verse';
- if(/generate.*fresh idea|fresh idea|surprise me/.test(text)&&!insideDesigner)return 'generate-surprise-content';
- if(/generate image|create image|make graphic|create graphic/.test(text))return 'render-graphic';
- return '';
-}
-function priority(btn,action){
- const insideDesigner=!!btn.closest('#dmSocialDesigner');
- const id=(btn.id||'').toLowerCase();
- if(['save-image','share-image','designer-random-theme','render-graphic'].includes(action)&&insideDesigner)return 100;
- if(id==='dmsocialfreshselected')return 95;
- if(id==='dmsocialmarkposted')return 95;
- if(id.includes('copycaption'))return 96;
- if(id.includes('copyhashtags'))return 96;
- if(btn.closest('#dmSocialV2Panel'))return 80;
- if(btn.closest('.social-controls'))return 70;
- return 10;
-}
-function removeLegacyTemplateSelectors(view){
- [...view.querySelectorAll('select')].forEach(select=>{
-  if(select.closest('#dmSocialDesigner'))return;
-  const labelText=controlText(select.closest('label')||select);
-  const optionText=norm([...select.options].map(o=>o.textContent).join(' '));
-  if(/template|design style|post style|graphic style|background style/.test(labelText+' '+optionText))hideControl(select,'legacy-template-selector');
- });
- [...view.querySelectorAll('label,h3,h4,p,span')].forEach(el=>{
-  if(el.closest('#dmSocialDesigner'))return;
-  const text=norm(el.textContent);
-  if(text==='template'||text==='choose template'||text==='select template'){
-   const wrapper=el.closest('label,.field,.form-field,.control-group,.card');
-   if(wrapper&&wrapper.querySelector('select'))hideBlock(wrapper);
-  }
- });
-}
-function dedupeButtons(view){
- const groups=new Map();
- const controls=[...view.querySelectorAll('button,a[role="button"],input[type="button"],input[type="submit"]')].filter(btn=>{
-  if(btn.closest('[hidden],[data-dm-legacy-social-hidden="1"]'))return false;
-  if(btn.dataset.dmDuplicateSocialButton==='1')return false;
-  return !btn.hidden;
- });
- controls.forEach(btn=>{
-  const action=actionOf(btn);if(!action)return;
-  if(!groups.has(action))groups.set(action,[]);
-  groups.get(action).push(btn);
- });
- groups.forEach((items,action)=>{
-  if(items.length<2)return;
-  items.sort((a,b)=>priority(b,action)-priority(a,action));
-  items[0].dataset.dmKeepSocialAction='1';
-  items.slice(1).forEach(hideButton);
- });
- view.querySelectorAll('.social-auto-actions,.social-actions,.resource-buttons,.creator-buttons,.dm-designer-actions').forEach(row=>{
-  if(row.closest('#dmSocialDesigner'))return;
-  const visible=[...row.querySelectorAll('button,a[role="button"],input[type="button"],input[type="submit"]')].filter(b=>!b.hidden&&b.style.display!=='none');
-  if(!visible.length&&row.children.length)row.style.setProperty('display','none','important');
- });
-}
-function arrangePanels(view){
- const layout=view.querySelector('.social-studio-layout');
- if(!layout)return;
- const branding=view.querySelector('#dmSocialBrandingSettings');
- const designer=view.querySelector('#dmSocialDesigner');
- const drafts=view.querySelector('.social-drafts');
- let anchor=layout;
- [branding,designer].forEach(panel=>{
-  if(!panel)return;
-  if(panel.parentElement!==view||panel.previousElementSibling!==anchor)anchor.insertAdjacentElement('afterend',panel);
-  panel.classList.add('dm-social-full-width-panel');
-  panel.style.width='100%';
-  panel.style.maxWidth='1220px';
-  panel.style.marginLeft='auto';
-  panel.style.marginRight='auto';
-  anchor=panel;
- });
- if(drafts&&drafts.previousElementSibling!==anchor)anchor.insertAdjacentElement('afterend',drafts);
-}
-function clean(){
+
+function arrange(){
  if(location.hash!=='#socialstudio')return false;
- const view=$('#view'),designer=$('#dmSocialDesigner');
+ const view=$('#view');
+ const designer=$('#dmSocialDesigner');
  if(!view||!designer)return false;
+
+ const layout=$('.social-studio-layout',view);
+ const controls=$('.social-controls',view);
+ const preview=$('.social-preview-card',view);
+ const engine=$('#dmSocialV2Panel',view);
+ const branding=$('#dmSocialBrandingSettings',view);
+ const drafts=$('.social-drafts',view);
+
  view.classList.add('dm-premium-social-active');
- arrangePanels(view);
- view.querySelectorAll('canvas').forEach(c=>{if(c.id!=='dmDesignerCanvas')hideBlock(c)});
- [...view.querySelectorAll('h1,h2,h3,h4,h5,strong,b,span,p')].forEach(el=>{
-  if(el.closest('#dmSocialDesigner'))return;
-  const text=(el.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();
-  if(text==='POST TEXT PREVIEW'||text==='SCRIPTURE'||text.startsWith('POST TEXT PREVIEW '))hideBlock(el);
- });
- view.querySelectorAll('.social-preview,.social-preview-card,.social-post-preview,.post-preview-card,[data-social-preview],[id*="socialPreview" i],[class*="social-preview" i]').forEach(hideBlock);
- removeLegacyTemplateSelectors(view);
- dedupeButtons(view);
- arrangePanels(view);
+
+ /* The premium designer is now the main Social Studio interface. */
+ showPanel(designer);
+ if(designer.parentElement!==view||designer!==view.firstElementChild){
+  view.insertBefore(designer,view.firstElementChild);
+ }
+
+ /* Keep the useful fresh-content and branding tools underneath it. */
+ let anchor=designer;
+ if(engine){showPanel(engine);anchor=placeAfter(anchor,engine)}
+ if(branding){showPanel(branding);anchor=placeAfter(anchor,branding)}
+ if(drafts){showPanel(drafts);anchor=placeAfter(anchor,drafts)}
+
+ /* Remove the duplicated legacy creator, dropdowns, caption form and preview. */
+ hideLegacy(controls);
+ hideLegacy(preview);
+ hideLegacy(layout);
+
  return true;
 }
-let timer=0;
-function schedule(){clearTimeout(timer);timer=setTimeout(()=>{clean();setTimeout(clean,120);setTimeout(clean,450)},80)}
+
+function schedule(){
+ clearTimeout(timer);
+ timer=setTimeout(()=>{
+  arrange();
+  setTimeout(arrange,120);
+  setTimeout(arrange,500);
+ },50);
+}
+
 window.addEventListener('load',schedule);
 window.addEventListener('hashchange',schedule);
 window.addEventListener('resize',schedule);
-document.addEventListener('click',e=>{if(e.target.closest('[data-page="socialstudio"],a[href="#socialstudio"],#dmSocialDesigner,#dmSocialBrandingSettings'))schedule()});
-new MutationObserver(()=>{if(location.hash==='#socialstudio')schedule()}).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener('click',e=>{
+ if(e.target.closest('[data-page="socialstudio"],a[href="#socialstudio"],#dmSocialDesigner,#dmSocialV2Panel,#dmSocialBrandingSettings'))schedule();
+});
+new MutationObserver(()=>{
+ if(location.hash==='#socialstudio')schedule();
+}).observe(document.documentElement,{childList:true,subtree:true});
 })();
