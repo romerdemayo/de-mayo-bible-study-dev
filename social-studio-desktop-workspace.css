@@ -1,50 +1,40 @@
-/* De Mayo Bible Studies — Build 1.23.1 Social Studio desktop workspace */
+/* De Mayo Bible Studies — Build 1.23.1a adaptive Social Studio workspace */
 
-/* Keep Social Studio centred and prevent ultra-wide empty space. */
 #view:has(.social-studio-layout){
   width:100%;
-  max-width:1440px;
+  max-width:1480px;
   margin-inline:auto;
 }
 
 .social-studio-layout{
   display:grid;
-  grid-template-columns:minmax(400px,560px) minmax(460px,1fr);
+  grid-template-columns:minmax(380px,520px) minmax(480px,1fr);
   grid-template-areas:
     "controls preview"
     "controls engine"
-    "controls branding";
+    "controls branding"
+    "designer designer";
   align-items:start;
   gap:22px;
   width:100%;
-  max-width:1220px;
+  max-width:1280px;
   margin:0 auto 24px;
 }
 
-.social-studio-layout > .social-controls{
-  grid-area:controls;
+.social-studio-layout > .social-controls{grid-area:controls;min-width:0}
+.social-studio-layout > .social-preview-card{grid-area:preview;min-width:0}
+.social-studio-layout > #dmSocialV2Panel{grid-area:engine;min-width:0}
+.social-studio-layout > #dmSocialBrandingSettings{grid-area:branding;min-width:0}
+.social-studio-layout > #dmSocialDesigner{
+  grid-area:designer;
   min-width:0;
+  width:100%;
+  margin:0;
 }
 
-.social-studio-layout > .social-preview-card{
-  grid-area:preview;
-  min-width:0;
-}
-
-.social-studio-layout > #dmSocialV2Panel{
-  grid-area:engine;
-  min-width:0;
-}
-
-.social-studio-layout > #dmSocialBrandingSettings{
-  grid-area:branding;
-  min-width:0;
-}
-
-/* The preview should be useful on a desktop, not phone-sized. */
 .social-preview-card .social-canvas-wrap{
   width:100%;
-  min-height:460px;
+  min-height:440px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -57,12 +47,11 @@
   width:auto;
   height:auto;
   max-width:100%;
-  max-height:680px;
+  max-height:650px;
   margin:auto;
   box-shadow:0 18px 44px rgba(23,63,53,.16);
 }
 
-/* Make action rows use the available width cleanly. */
 #dmSocialV2Panel .social-auto-actions,
 #dmSocialBrandingSettings .social-auto-actions{
   display:grid;
@@ -70,40 +59,34 @@
   gap:10px;
 }
 
-#dmSocialV2Panel .social-auto-actions > .primary:first-child{
-  grid-column:1 / -1;
-}
+#dmSocialV2Panel .social-auto-actions > .primary:first-child{grid-column:1/-1}
+#dmSocialBrandingSettings .social-auto-actions{grid-template-columns:1fr}
+#dmSocialV2Panel button,#dmSocialBrandingSettings button{min-height:44px;white-space:normal}
 
-#dmSocialBrandingSettings .social-auto-actions{
-  grid-template-columns:1fr;
-}
-
-#dmSocialV2Panel button,
-#dmSocialBrandingSettings button{
-  min-height:44px;
-  white-space:normal;
-}
-
-/* Drafts and other sections line up with the main workspace. */
 #view:has(.social-studio-layout) > .social-drafts,
 #view:has(.social-studio-layout) > section:not(.social-studio-layout){
   width:100%;
-  max-width:1220px;
+  max-width:1280px;
   margin-inline:auto;
 }
 
-/* Tablet: two balanced columns without forcing a tall fixed creator. */
-@media (min-width:760px) and (max-width:1050px){
+/* Tablet */
+@media (min-width:760px) and (max-width:1099px){
   .social-studio-layout{
-    grid-template-columns:minmax(340px,.9fr) minmax(390px,1.1fr);
+    grid-template-columns:minmax(320px,.9fr) minmax(380px,1.1fr);
+    grid-template-areas:
+      "controls preview"
+      "engine engine"
+      "branding branding"
+      "designer designer";
     gap:16px;
   }
-  .social-preview-card .social-canvas-wrap{min-height:380px;padding:12px}
+  .social-preview-card .social-canvas-wrap{min-height:360px;padding:12px}
   #dmSocialV2Panel .social-auto-actions{grid-template-columns:1fr 1fr}
-  #dmSocialV2Panel .social-auto-actions > .primary:first-child{grid-column:1 / -1}
+  #dmSocialV2Panel .social-auto-actions > .primary:first-child{grid-column:1/-1}
 }
 
-/* Phone: preserve the existing simple single-column flow. */
+/* Phone */
 @media (max-width:759px){
   .social-studio-layout{
     display:flex;
@@ -115,6 +98,7 @@
   .social-studio-layout > #dmSocialV2Panel{order:2}
   .social-studio-layout > .social-preview-card{order:3}
   .social-studio-layout > #dmSocialBrandingSettings{order:4}
+  .social-studio-layout > #dmSocialDesigner{order:5;width:100%}
   .social-preview-card .social-canvas-wrap{min-height:0;padding:8px}
   .social-preview-card #socialCanvas{max-height:none}
   #dmSocialV2Panel .social-auto-actions{grid-template-columns:1fr}
