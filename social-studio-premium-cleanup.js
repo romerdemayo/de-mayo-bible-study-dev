@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies - Build 1.25.1d Premium Social Studio cleanup */
+/* De Mayo Bible Studies - Build 1.25.1e Premium Social Studio cleanup */
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
@@ -23,10 +23,7 @@ function hideControl(el,reason='legacy-control'){
  }
 }
 function norm(text=''){
- return String(text)
-  .replace(/[\s\u00a0]+/g,' ')
-  .replace(/[✨⬇📤📋✅✏️🎨🎲🔄♻️🖼️📱]/g,'')
-  .trim().toLowerCase();
+ return String(text).replace(/[\s\u00a0]+/g,' ').replace(/[✨⬇📤📋✅✏️🎨🎲🔄♻️🖼️📱]/g,'').trim().toLowerCase();
 }
 function controlText(el){return norm([el.textContent,el.value,el.title,el.getAttribute('aria-label'),el.name,el.id].filter(Boolean).join(' '))}
 function hideButton(btn){
@@ -69,8 +66,7 @@ function removeLegacyTemplateSelectors(view){
   if(select.closest('#dmSocialDesigner'))return;
   const labelText=controlText(select.closest('label')||select);
   const optionText=norm([...select.options].map(o=>o.textContent).join(' '));
-  const looksTemplate=/template|design style|post style|graphic style|background style/.test(labelText+' '+optionText);
-  if(looksTemplate)hideControl(select,'legacy-template-selector');
+  if(/template|design style|post style|graphic style|background style/.test(labelText+' '+optionText))hideControl(select,'legacy-template-selector');
  });
  [...view.querySelectorAll('label,h3,h4,p,span')].forEach(el=>{
   if(el.closest('#dmSocialDesigner'))return;
@@ -96,7 +92,7 @@ function dedupeButtons(view){
  groups.forEach((items,action)=>{
   if(items.length<2)return;
   items.sort((a,b)=>priority(b,action)-priority(a,action));
-  const keep=items[0];keep.dataset.dmKeepSocialAction='1';
+  items[0].dataset.dmKeepSocialAction='1';
   items.slice(1).forEach(hideButton);
  });
  view.querySelectorAll('.social-auto-actions,.social-actions,.resource-buttons,.creator-buttons,.dm-designer-actions').forEach(row=>{
@@ -105,11 +101,31 @@ function dedupeButtons(view){
   if(!visible.length&&row.children.length)row.style.setProperty('display','none','important');
  });
 }
+function arrangePanels(view){
+ const layout=view.querySelector('.social-studio-layout');
+ if(!layout)return;
+ const branding=view.querySelector('#dmSocialBrandingSettings');
+ const designer=view.querySelector('#dmSocialDesigner');
+ const drafts=view.querySelector('.social-drafts');
+ let anchor=layout;
+ [branding,designer].forEach(panel=>{
+  if(!panel)return;
+  if(panel.parentElement!==view||panel.previousElementSibling!==anchor)anchor.insertAdjacentElement('afterend',panel);
+  panel.classList.add('dm-social-full-width-panel');
+  panel.style.width='100%';
+  panel.style.maxWidth='1220px';
+  panel.style.marginLeft='auto';
+  panel.style.marginRight='auto';
+  anchor=panel;
+ });
+ if(drafts&&drafts.previousElementSibling!==anchor)anchor.insertAdjacentElement('afterend',drafts);
+}
 function clean(){
  if(location.hash!=='#socialstudio')return false;
  const view=$('#view'),designer=$('#dmSocialDesigner');
  if(!view||!designer)return false;
  view.classList.add('dm-premium-social-active');
+ arrangePanels(view);
  view.querySelectorAll('canvas').forEach(c=>{if(c.id!=='dmDesignerCanvas')hideBlock(c)});
  [...view.querySelectorAll('h1,h2,h3,h4,h5,strong,b,span,p')].forEach(el=>{
   if(el.closest('#dmSocialDesigner'))return;
@@ -119,12 +135,14 @@ function clean(){
  view.querySelectorAll('.social-preview,.social-preview-card,.social-post-preview,.post-preview-card,[data-social-preview],[id*="socialPreview" i],[class*="social-preview" i]').forEach(hideBlock);
  removeLegacyTemplateSelectors(view);
  dedupeButtons(view);
+ arrangePanels(view);
  return true;
 }
 let timer=0;
-function schedule(){clearTimeout(timer);timer=setTimeout(clean,260)}
+function schedule(){clearTimeout(timer);timer=setTimeout(()=>{clean();setTimeout(clean,120);setTimeout(clean,450)},80)}
 window.addEventListener('load',schedule);
 window.addEventListener('hashchange',schedule);
-document.addEventListener('click',e=>{if(e.target.closest('[data-page="socialstudio"],a[href="#socialstudio"]'))schedule()});
+window.addEventListener('resize',schedule);
+document.addEventListener('click',e=>{if(e.target.closest('[data-page="socialstudio"],a[href="#socialstudio"],#dmSocialDesigner,#dmSocialBrandingSettings'))schedule()});
 new MutationObserver(()=>{if(location.hash==='#socialstudio')schedule()}).observe(document.documentElement,{childList:true,subtree:true});
 })();
