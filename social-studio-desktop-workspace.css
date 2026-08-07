@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies — Build 1.23.1a adaptive Social Studio workspace */
+/* De Mayo Bible Studies — adaptive Social Studio workspace */
 
 #view:has(.social-studio-layout){
   width:100%;
@@ -52,6 +52,22 @@
   box-shadow:0 18px 44px rgba(23,63,53,.16);
 }
 
+/* Premium designer preview must always fit the available viewport. */
+#dmSocialDesigner .dm-feature-preview{
+  min-width:0;
+  overflow:hidden;
+}
+
+#dmSocialDesigner #dmDesignerCanvas{
+  display:block;
+  width:auto;
+  height:auto;
+  max-width:100%;
+  max-height:min(72vh,760px);
+  object-fit:contain;
+  margin-inline:auto;
+}
+
 #dmSocialV2Panel .social-auto-actions,
 #dmSocialBrandingSettings .social-auto-actions{
   display:grid;
@@ -84,6 +100,7 @@
   .social-preview-card .social-canvas-wrap{min-height:360px;padding:12px}
   #dmSocialV2Panel .social-auto-actions{grid-template-columns:1fr 1fr}
   #dmSocialV2Panel .social-auto-actions > .primary:first-child{grid-column:1/-1}
+  #dmSocialDesigner #dmDesignerCanvas{max-height:68vh}
 }
 
 /* Phone */
@@ -103,4 +120,32 @@
   .social-preview-card #socialCanvas{max-height:none}
   #dmSocialV2Panel .social-auto-actions{grid-template-columns:1fr}
   #dmSocialV2Panel .social-auto-actions > .primary:first-child{grid-column:auto}
+
+  #dmSocialDesigner{
+    width:100%!important;
+    max-width:100%!important;
+    padding:12px!important;
+    overflow:hidden;
+  }
+
+  #dmSocialDesigner .dm-premium-layout,
+  #dmSocialDesigner .dm-feature-preview{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+  }
+
+  #dmSocialDesigner .dm-feature-preview{
+    padding:8px!important;
+    overflow:hidden;
+  }
+
+  #dmSocialDesigner #dmDesignerCanvas{
+    width:100%!important;
+    height:auto!important;
+    max-width:100%!important;
+    max-height:none!important;
+    object-fit:contain;
+    border-radius:10px;
+  }
 }
