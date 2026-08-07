@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies - Build 1.23.1d Premium Social Studio primary interface */
+/* De Mayo Bible Studies - Premium Social Studio primary interface */
 (function(){
 'use strict';
 let timer=0;
@@ -41,48 +41,54 @@ function arrange(){
  const layout=$('.social-studio-layout',view);
  const controls=$('.social-controls',view);
  const preview=$('.social-preview-card',view);
- const engine=$('#dmSocialV2Panel',view);
- const branding=$('#dmSocialBrandingSettings',view);
+ const engine=$('#dmSocialV2Panel');
+ const branding=$('#dmSocialBrandingSettings');
  const drafts=$('.social-drafts',view);
 
  view.classList.add('dm-premium-social-active');
-
- /* The premium designer is now the main Social Studio interface. */
  showPanel(designer);
- if(designer.parentElement!==view||designer!==view.firstElementChild){
-  view.insertBefore(designer,view.firstElementChild);
- }
+ if(designer.parentElement!==view||designer!==view.firstElementChild)view.insertBefore(designer,view.firstElementChild);
 
- /* Keep the useful fresh-content and branding tools underneath it. */
  let anchor=designer;
  if(engine){showPanel(engine);anchor=placeAfter(anchor,engine)}
  if(branding){showPanel(branding);anchor=placeAfter(anchor,branding)}
  if(drafts){showPanel(drafts);anchor=placeAfter(anchor,drafts)}
 
- /* Remove the duplicated legacy creator, dropdowns, caption form and preview. */
  hideLegacy(controls);
  hideLegacy(preview);
  hideLegacy(layout);
 
+ /* Redraw premium canvas from the latest generated verse or prayer. */
+ const source=$('#socialType')?.value==='prayer'?$('#socialPrayer'):$('#socialVerse');
+ if(source&&!source.dataset.dmPremiumRedrawing){
+  source.dataset.dmPremiumRedrawing='1';
+  source.dispatchEvent(new Event('input',{bubbles:true}));
+  delete source.dataset.dmPremiumRedrawing;
+ }
  return true;
 }
 
-function schedule(){
+function schedule(delay=40){
  clearTimeout(timer);
  timer=setTimeout(()=>{
   arrange();
-  setTimeout(arrange,120);
-  setTimeout(arrange,500);
- },50);
+  setTimeout(arrange,100);
+  setTimeout(arrange,350);
+  setTimeout(arrange,800);
+ },delay);
 }
 
-window.addEventListener('load',schedule);
-window.addEventListener('hashchange',schedule);
-window.addEventListener('resize',schedule);
+window.addEventListener('load',()=>schedule());
+window.addEventListener('hashchange',()=>schedule());
+window.addEventListener('resize',()=>schedule(80));
 document.addEventListener('click',e=>{
- if(e.target.closest('[data-page="socialstudio"],a[href="#socialstudio"],#dmSocialDesigner,#dmSocialV2Panel,#dmSocialBrandingSettings'))schedule();
+ if(e.target.closest('[data-page="socialstudio"],a[href="#socialstudio"],#socialGenerateVerse,#socialGeneratePrayer,#socialGenerateComplete,#dmSocialFreshSelected,#dmSocialDesigner,#dmSocialV2Panel,#dmSocialBrandingSettings'))schedule();
 });
-new MutationObserver(()=>{
- if(location.hash==='#socialstudio')schedule();
-}).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener('input',e=>{
+ if(['socialVerse','socialReference','socialPrayer','socialType'].includes(e.target?.id))schedule(20);
+});
+document.addEventListener('change',e=>{
+ if(['socialType','socialTopic'].includes(e.target?.id))schedule(20);
+});
+new MutationObserver(()=>{if(location.hash==='#socialstudio')schedule(60)}).observe(document.documentElement,{childList:true,subtree:true});
 })();
