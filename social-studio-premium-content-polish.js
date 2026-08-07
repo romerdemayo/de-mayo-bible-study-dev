@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies — Premium Social Studio theme + lower-content polish */
+/* De Mayo Bible Studies — Premium Social Studio theme + adaptive content polish */
 (function(){
 'use strict';
 const $=(s,r=document)=>r.querySelector(s);
@@ -11,15 +11,16 @@ const THEMES={
  healing:{label:'Healing',reflection:'Healing can be a process, but God remains present in every part of it. Bring Him your pain and trust Him with what you cannot repair yourself.',tagline:'GOD IS NEAR. KEEP BRINGING HIM YOUR HEART.'},
  gratitude:{label:'Gratitude',reflection:'Gratitude helps us notice God’s faithfulness in ordinary moments. Remember what He has done and thank Him for what He is still doing.',tagline:'REMEMBER HIS GOODNESS. GIVE THANKS TODAY.'}
 };
+const VISUAL={
+ classic:{ink:'#241c17',accent:'#b58a42'},sunrise:{ink:'#3b2518',accent:'#b85d26'},peace:{ink:'#173647',accent:'#5d8fa8'},nature:{ink:'#17362d',accent:'#557a46'},modern:{ink:'#f8e7ad',accent:'#d6b45c'},seasonal:{ink:'#fff8e8',accent:'#ddb969'}
+};
 let currentTheme='hope',timer=0;
 function type(){return $('#socialType')?.value==='prayer'?'prayer':'verse'}
 function currentData(){return THEMES[currentTheme]||THEMES.hope}
+function visualData(){const key=$('[data-designer-theme].active')?.dataset?.designerTheme||'classic';return VISUAL[key]||VISUAL.classic}
 function setLegacyTheme(value){
  const select=$('#socialSpiritualTheme')||$('#socialThemeSelect')||$('#socialTheme');
- if(select){
-  const target=[...select.options].find(o=>String(o.value).toLowerCase()===value||String(o.textContent).trim().toLowerCase()===value);
-  if(target){select.value=target.value;select.dispatchEvent(new Event('change',{bubbles:true}))}
- }
+ if(select){const target=[...select.options].find(o=>String(o.value).toLowerCase()===value||String(o.textContent).trim().toLowerCase()===value);if(target){select.value=target.value;select.dispatchEvent(new Event('change',{bubbles:true}))}}
 }
 function ensureThemeSelector(){
  const designer=$('#dmSocialDesigner');if(!designer||$('#dmPremiumSpiritualThemes'))return;
@@ -30,42 +31,42 @@ function ensureThemeSelector(){
  box.addEventListener('click',e=>{const b=e.target.closest('[data-spiritual-theme]');if(!b)return;currentTheme=b.dataset.spiritualTheme;box.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));setLegacyTheme(currentTheme);const ref=$('#dmDesignerReflection');if(ref){ref.value=currentData().reflection;ref.dataset.dmThemeManaged='1'}run()});
 }
 function generatedPrayer(){
- const d=currentData(),ref=$('#socialReference')?.value||'this Scripture';
- const map={
+ const ref=$('#socialReference')?.value||'this Scripture';const map={
   hope:`Lord, fill me with hope through Your Word in ${ref}. Help me trust Your promises even when I cannot yet see what You are doing.`,
   faith:`Lord, strengthen my faith through ${ref}. Help me trust You beyond what I can see and obey You one step at a time.`,
   peace:`Lord, let the truth of ${ref} quiet my heart. Help me release my worries to You and receive Your peace today.`,
   guidance:`Lord, use ${ref} to guide me. Give me wisdom, clarity, and courage to follow the direction You provide.`,
   strength:`Lord, strengthen me through ${ref}. When I feel weak, remind me that Your strength is enough for me.`,
   healing:`Lord, bring Your comfort and healing through ${ref}. Help me trust You with every part of my pain and recovery.`,
-  gratitude:`Lord, thank You for the truth of ${ref}. Help me notice Your goodness and respond with a grateful heart.`
- };
+  gratitude:`Lord, thank You for the truth of ${ref}. Help me notice Your goodness and respond with a grateful heart.`};
  return map[currentTheme]||map.hope;
+}
+function linesFor(ctx,text,maxWidth){const words=String(text||'').trim().split(/\s+/);let line='',lines=[];for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);return lines}
+function paintMainContent(ctx,w,h,lowerY){
+ const prayerMode=type()==='prayer';const v=visualData();const ref=prayerMode?'PRAYER':($('#socialReference')?.value||'SCRIPTURE');const body=prayerMode?($('#socialPrayer')?.value||'Create a prayer first.'):($('#socialVerse')?.value||'Generate a Bible verse first.');
+ const sample=ctx.getImageData(Math.max(0,Math.round(w*.04)),Math.max(0,Math.round(h*.32)),1,1).data;
+ ctx.fillStyle=`rgba(${sample[0]},${sample[1]},${sample[2]},.96)`;ctx.fillRect(0,Math.round(h*.20),w,Math.max(1,lowerY-Math.round(h*.20)-12));
+ ctx.textAlign='center';ctx.fillStyle=v.ink;
+ const refY=Math.round(h*.285);let refSize=Math.max(42,Math.round(w*.062));ctx.font=`700 ${refSize}px Georgia,serif`;while(ctx.measureText(ref.toUpperCase()).width>w*.78&&refSize>34){refSize-=2;ctx.font=`700 ${refSize}px Georgia,serif`}
+ ctx.fillText(ref.toUpperCase(),w/2,refY);ctx.fillStyle=v.accent;ctx.fillRect(Math.round(w*.28),refY+Math.round(h*.028),Math.round(w*.44),Math.max(3,Math.round(h*.003)));
+ const startY=refY+Math.round(h*.075),maxWidth=Math.round(w*.82),available=Math.max(120,lowerY-startY-Math.round(h*.035));let size=Math.max(30,Math.round(w*.043)),lines=[],lh=0;
+ while(size>=26){ctx.font=`600 ${size}px Georgia,serif`;lines=linesFor(ctx,'“'+body+'”',maxWidth);lh=Math.round(size*1.18);if(lines.length*lh<=available)break;size-=2}
+ ctx.font=`600 ${size}px Georgia,serif`;ctx.fillStyle=v.ink;ctx.textAlign='center';lines.forEach((line,i)=>ctx.fillText(line,w/2,startY+i*lh));
+ return startY+lines.length*lh;
 }
 function overlayLowerContent(){
  const c=$('#dmDesignerCanvas');if(!c)return;const ctx=c.getContext('2d'),w=c.width,h=c.height;if(!ctx||!w||!h)return;
- const d=currentData(),prayerMode=type()==='prayer';
- const y=Math.round(h*.53),x=Math.round(w*.075),contentW=Math.round(w*.85),boxH=Math.round(h*.19);
- const sample=ctx.getImageData(Math.max(0,Math.round(w*.03)),Math.max(0,Math.round(h*.46)),1,1).data;
- /* Clear the complete legacy lower-content zone before painting the final version. */
- ctx.fillStyle=`rgba(${sample[0]},${sample[1]},${sample[2]},.98)`;ctx.fillRect(0,Math.round(h*.45),w,Math.round(h*.48));
- const wrap=(text,tx,ty,maxWidth,lineHeight,maxLines)=>{const words=String(text).split(/\s+/);let line='',lines=[];for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word;if(lines.length>=maxLines)break}else line=test}if(line&&lines.length<maxLines)lines.push(line);lines.forEach((l,i)=>ctx.fillText(l,tx,ty+i*lineHeight));};
- if(!prayerMode){
-  const gap=Math.round(w*.025),bw=Math.round((contentW-gap)/2);ctx.fillStyle='rgba(255,255,255,.66)';ctx.beginPath();ctx.roundRect(x,y,bw,boxH,24);ctx.fill();ctx.beginPath();ctx.roundRect(x+bw+gap,y,bw,boxH,24);ctx.fill();ctx.textAlign='left';ctx.fillStyle='rgba(70,55,40,.78)';ctx.font=`700 ${Math.max(20,Math.round(w*.02))}px Arial`;ctx.fillText('♡  REFLECTION',x+28,y+46);ctx.fillText('♧  PRAYER',x+bw+gap+28,y+46);ctx.fillStyle='rgba(45,38,32,.92)';ctx.font=`400 ${Math.max(20,Math.round(w*.018))}px Georgia,serif`;wrap(d.reflection,x+28,y+84,bw-56,Math.max(27,Math.round(w*.026)),4);wrap(generatedPrayer(),x+bw+gap+28,y+84,bw-56,Math.max(27,Math.round(w*.026)),4);
- }
- const tagY=Math.round(h*.79);ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.72)';ctx.beginPath();ctx.roundRect(Math.round(w*.14),tagY,Math.round(w*.72),Math.round(h*.06),18);ctx.fill();ctx.fillStyle='rgba(45,38,32,.95)';ctx.font=`700 ${Math.max(16,Math.round(w*.018))}px Arial`;ctx.fillText(d.tagline,w/2,tagY+Math.round(h*.039));
- /* Repaint branding because the clear zone intentionally covers the old fixed tagline/footer area. */
- const brand=$('#dmDesignerBrand')?.value||'De Mayo Bible Studies';ctx.font=`600 ${Math.max(16,w*.018)}px Arial`;ctx.letterSpacing='5px';ctx.fillText(brand.toUpperCase(),w/2,h-h*.035);ctx.letterSpacing='0px';
+ const d=currentData(),prayerMode=type()==='prayer';const verseText=$('#socialVerse')?.value||'';const longVerse=verseText.length>115;
+ let y=Math.round(h*(longVerse?.615:.575));const x=Math.round(w*.075),contentW=Math.round(w*.85),boxH=Math.round(h*(longVerse?.155:.175));
+ const mainBottom=paintMainContent(ctx,w,h,y);y=Math.min(Math.round(h*.64),Math.max(y,mainBottom+Math.round(h*.025)));
+ const sample=ctx.getImageData(Math.max(0,Math.round(w*.03)),Math.max(0,y),1,1).data;ctx.fillStyle=`rgba(${sample[0]},${sample[1]},${sample[2]},.98)`;ctx.fillRect(0,y-12,w,Math.round(h*.93)-(y-12));
+ const wrap=(text,tx,ty,maxWidth,lineHeight,maxLines)=>{ctx.textAlign='left';const lines=linesFor(ctx,text,maxWidth).slice(0,maxLines);lines.forEach((l,i)=>ctx.fillText(l,tx,ty+i*lineHeight));};
+ if(!prayerMode){const gap=Math.round(w*.025),bw=Math.round((contentW-gap)/2);ctx.fillStyle='rgba(255,255,255,.66)';ctx.beginPath();ctx.roundRect(x,y,bw,boxH,24);ctx.fill();ctx.beginPath();ctx.roundRect(x+bw+gap,y,bw,boxH,24);ctx.fill();ctx.fillStyle='rgba(70,55,40,.78)';ctx.font=`700 ${Math.max(18,Math.round(w*.018))}px Arial`;ctx.fillText('♡  REFLECTION',x+24,y+40);ctx.fillText('♧  PRAYER',x+bw+gap+24,y+40);ctx.fillStyle='rgba(45,38,32,.92)';ctx.font=`400 ${Math.max(18,Math.round(w*.0165))}px Georgia,serif`;wrap(d.reflection,x+24,y+74,bw-48,Math.max(24,Math.round(w*.023)),4);wrap(generatedPrayer(),x+bw+gap+24,y+74,bw-48,Math.max(24,Math.round(w*.023)),4)}
+ const tagY=prayerMode?Math.round(h*.78):Math.min(Math.round(h*.84),y+boxH+Math.round(h*.025));ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.72)';ctx.beginPath();ctx.roundRect(Math.round(w*.14),tagY,Math.round(w*.72),Math.round(h*.055),18);ctx.fill();ctx.fillStyle='rgba(45,38,32,.95)';ctx.font=`700 ${Math.max(15,Math.round(w*.0165))}px Arial`;ctx.fillText(d.tagline,w/2,tagY+Math.round(h*.036));
+ const brand=$('#dmDesignerBrand')?.value||'De Mayo Bible Studies';ctx.font=`600 ${Math.max(15,w*.0165)}px Arial`;ctx.letterSpacing='5px';ctx.fillText(brand.toUpperCase(),w/2,h-h*.035);ctx.letterSpacing='0px';
 }
-function syncEditors(){
- const ref=$('#dmDesignerReflection');if(ref&&(!ref.value||ref.dataset.dmThemeManaged==='1')){ref.value=currentData().reflection;ref.dataset.dmThemeManaged='1'}
- const prayerLabel=$('#dmDesignerPrayer')?.closest('label');if(prayerLabel)prayerLabel.style.display=type()==='prayer'?'none':'';
- const refLabel=$('#dmDesignerReflection')?.closest('label');if(refLabel)refLabel.style.display=type()==='prayer'?'none':'';
-}
-function run(){if(location.hash!=='#socialstudio')return;ensureThemeSelector();syncEditors();overlayLowerContent()}
+function syncEditors(){const ref=$('#dmDesignerReflection');if(ref&&(!ref.value||ref.dataset.dmThemeManaged==='1')){ref.value=currentData().reflection;ref.dataset.dmThemeManaged='1'}const prayerLabel=$('#dmDesignerPrayer')?.closest('label');if(prayerLabel)prayerLabel.style.display=type()==='prayer'?'none':'';const refLabel=$('#dmDesignerReflection')?.closest('label');if(refLabel)refLabel.style.display=type()==='prayer'?'none':''}
+function run(){if(location.hash!=='#socialstudio')return;ensureThemeSelector();syncEditors();requestAnimationFrame(overlayLowerContent)}
 function schedule(){clearTimeout(timer);timer=setTimeout(run,0)}
-window.addEventListener('load',schedule);window.addEventListener('hashchange',schedule);
-document.addEventListener('click',e=>{if(e.target.closest('#dmSocialDesigner,#dmPremiumGenerateControls,[data-page="socialstudio"]'))schedule()});
-document.addEventListener('input',e=>{if(['socialVerse','socialPrayer','socialReference','socialType','dmDesignerPrayer','dmDesignerReflection'].includes(e.target.id))run()});
-document.addEventListener('change',e=>{if(e.target.id==='socialType')run()});
+window.addEventListener('load',schedule);window.addEventListener('hashchange',schedule);document.addEventListener('click',e=>{if(e.target.closest('#dmSocialDesigner,#dmPremiumGenerateControls,[data-page="socialstudio"]'))schedule()});document.addEventListener('input',e=>{if(['socialVerse','socialPrayer','socialReference','socialType','dmDesignerPrayer','dmDesignerReflection'].includes(e.target.id))run()});document.addEventListener('change',e=>{if(e.target.id==='socialType')run()});
 })();
