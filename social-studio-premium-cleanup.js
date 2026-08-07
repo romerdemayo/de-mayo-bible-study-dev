@@ -57,38 +57,21 @@ function arrange(){
  hideLegacy(controls);
  hideLegacy(preview);
  hideLegacy(layout);
-
- /* Redraw premium canvas from the latest generated verse or prayer. */
- const source=$('#socialType')?.value==='prayer'?$('#socialPrayer'):$('#socialVerse');
- if(source&&!source.dataset.dmPremiumRedrawing){
-  source.dataset.dmPremiumRedrawing='1';
-  source.dispatchEvent(new Event('input',{bubbles:true}));
-  delete source.dataset.dmPremiumRedrawing;
- }
  return true;
 }
 
-function schedule(delay=40){
+function schedule(delay=50){
  clearTimeout(timer);
- timer=setTimeout(()=>{
-  arrange();
-  setTimeout(arrange,100);
-  setTimeout(arrange,350);
-  setTimeout(arrange,800);
- },delay);
+ timer=setTimeout(arrange,delay);
 }
 
-window.addEventListener('load',()=>schedule());
-window.addEventListener('hashchange',()=>schedule());
-window.addEventListener('resize',()=>schedule(80));
+window.addEventListener('load',()=>{schedule();setTimeout(arrange,250)});
+window.addEventListener('hashchange',()=>{schedule();setTimeout(arrange,250)});
+window.addEventListener('resize',()=>schedule(100));
 document.addEventListener('click',e=>{
- if(e.target.closest('[data-page="socialstudio"],a[href="#socialstudio"],#socialGenerateVerse,#socialGeneratePrayer,#socialGenerateComplete,#dmSocialFreshSelected,#dmSocialDesigner,#dmSocialV2Panel,#dmSocialBrandingSettings'))schedule();
-});
-document.addEventListener('input',e=>{
- if(['socialVerse','socialReference','socialPrayer','socialType'].includes(e.target?.id))schedule(20);
+ if(e.target.closest('[data-page="socialstudio"],a[href="#socialstudio"],#socialGenerateVerse,#socialGeneratePrayer,#socialGenerateComplete,#dmSocialFreshSelected,#dmSocialDesigner,#dmSocialV2Panel,#dmSocialBrandingSettings'))schedule(60);
 });
 document.addEventListener('change',e=>{
- if(['socialType','socialTopic'].includes(e.target?.id))schedule(20);
+ if(['socialType','socialTopic'].includes(e.target?.id))schedule(60);
 });
-new MutationObserver(()=>{if(location.hash==='#socialstudio')schedule(60)}).observe(document.documentElement,{childList:true,subtree:true});
 })();
