@@ -1,5 +1,5 @@
 /* De Mayo Bible Studies | Project Phoenix performance cache */
-const VERSION='1.23.1h-dev-spiritual-theme-dynamic-content';
+const VERSION='1.23.1i-dev-generation-aware-lower-content';
 const SHELL_CACHE=`de-mayo-shell-${VERSION}`;
 const RUNTIME_CACHE=`de-mayo-runtime-${VERSION}`;
 const OFFLINE_URL='./index.html';
