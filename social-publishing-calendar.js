@@ -4,12 +4,14 @@
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const QUEUE_KEY='dm_social_publish_queue_v1';
 const HISTORY_KEY='dm_social_publish_history_v1';
+const POSTED_KEY='dm_social_v22_posted_history';
 let timer=0,filter='all';
 function read(k,f=[]){try{const v=JSON.parse(localStorage.getItem(k)||JSON.stringify(f));return Array.isArray(v)?v:f}catch{return f}}
 function write(k,v){localStorage.setItem(k,JSON.stringify(v))}
 function toast(m){window.toast?.(m)}
 function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]))}
 function val(id){return String($(id)?.value||'').trim()}
+function clean(v=''){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
 function localDate(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
 function today(){return localDate()}
 function tomorrow(){const d=new Date();d.setDate(d.getDate()+1);return localDate(d)}
@@ -19,10 +21,11 @@ function current(){const type=$('#socialType')?.value==='prayer'?'prayer':'verse
 function signature(x){return `${x.type}|${x.reference}|${x.body}`.toLowerCase().replace(/\s+/g,' ').trim()}
 function statusOf(x){if(x.status==='posted')return'posted';const t=stamp(x.date,x.time);const now=Date.now(),td=today();if(x.date===td)return'today';if(t<now)return'overdue';return'upcoming'}
 function duplicateOf(item){const sig=signature(item);return read(QUEUE_KEY).find(x=>x.status!=='posted'&&signature(x)===sig)||read(HISTORY_KEY).find(x=>signature(x)===sig)}
+function protectPosted(x){if(!x?.body)return;const item={...x,postedAt:Date.now(),signature:clean(`${x.type}|${x.type==='prayer'?'Prayer':x.reference}|${x.body}|${x.caption||''}`)};const items=read(POSTED_KEY).filter(p=>!(p.type===item.type&&clean(p.body||'')===clean(item.body||''))&&!(item.type==='verse'&&p.reference===item.reference));items.unshift(item);write(POSTED_KEY,items.slice(0,500))}
 function scheduleCurrent(){const base=current(),date=val('#dmScheduleDate'),time=val('#dmScheduleTime')||'09:00';if(!base.body)return toast('Generate or enter content first.');if(!date)return toast('Choose a schedule date first.');const dup=duplicateOf(base);if(dup&&!confirm('This Scripture or prayer is already scheduled or recently saved. Schedule it again anyway?'))return;const items=read(QUEUE_KEY),id='queue-'+Date.now();items.push({...base,id,date,time,status:'scheduled',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});items.sort((a,b)=>stamp(a.date,a.time)-stamp(b.date,b.time));write(QUEUE_KEY,items);render();toast('Added to publishing queue.')}
 function setQuick(kind){const d=kind==='today'?today():kind==='tomorrow'?tomorrow():weekend();const el=$('#dmScheduleDate');if(el)el.value=d}
 function restore(x){const set=(id,v,evt='input')=>{const e=$(id);if(!e)return;e.value=v||'';e.dispatchEvent(new Event(evt,{bubbles:true}))};set('#socialType',x.type,'change');if(x.type==='prayer')set('#socialPrayer',x.body);else{set('#socialVerse',x.body);set('#socialReference',x.reference)}set('#socialCaption',x.caption);set('#socialHashtags',x.hashtags);if(x.reflection)set('#dmDesignerReflection',x.reflection);$(`[data-spiritual-theme="${x.spiritualTheme}"]`)?.click();$(`[data-designer-theme="${x.designTheme}"]`)?.click();localStorage.setItem('dm_social_platform_v1',x.platform||'facebook');$('#dmPublishingPlatforms [data-platform="'+(x.platform||'facebook')+'"]')?.click();window.scrollTo({top:0,behavior:'smooth'});toast('Scheduled post opened for editing.')}
-function markPosted(id){const items=read(QUEUE_KEY),x=items.find(i=>i.id===id);if(!x)return;x.status='posted';x.postedAt=new Date().toISOString();write(QUEUE_KEY,items);render();toast('Marked as posted.')}
+function markPosted(id){const items=read(QUEUE_KEY),x=items.find(i=>i.id===id);if(!x)return;x.status='posted';x.postedAt=new Date().toISOString();write(QUEUE_KEY,items);protectPosted(x);render();toast('Marked as posted and permanently protected from regeneration.')}
 function remove(id){if(!confirm('Remove this scheduled item?'))return;write(QUEUE_KEY,read(QUEUE_KEY).filter(x=>x.id!==id));render()}
 function counts(items){return items.reduce((a,x)=>{const s=statusOf(x);a[s]=(a[s]||0)+1;a[x.type]=(a[x.type]||0)+1;return a},{})}
 function renderCalendar(items){const box=$('#dmCalendarDays');if(!box)return;const now=new Date(),y=now.getFullYear(),m=now.getMonth(),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),offset=first.getDay();let html='';for(let i=0;i<offset;i++)html+='<span class="dm-cal-empty"></span>';for(let d=1;d<=days;d++){const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,dayItems=items.filter(x=>x.date===ds),isToday=ds===today();html+=`<button type="button" class="dm-cal-day ${isToday?'today':''} ${dayItems.length?'has-items':''}" data-cal-date="${ds}"><b>${d}</b>${dayItems.length?`<small>${dayItems.length} post${dayItems.length>1?'s':''}</small>`:''}</button>`}box.innerHTML=html;$$('[data-cal-date]',box).forEach(b=>b.onclick=()=>{$('#dmScheduleDate').value=b.dataset.calDate;filter=b.dataset.calDate;renderQueue(items)})}
