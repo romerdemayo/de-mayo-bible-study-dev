@@ -22,32 +22,34 @@ function historySet(t){
  return new Set([...generated,...posted].map(x=>key({type:t,body:x.body||'',reference:x.reference||''})).filter(Boolean));
 }
 function directId(id){return ['socialGenerateVerse','socialGeneratePrayer','socialGenerateComplete','dmSocialFreshSelected'].includes(id)}
-function generateUntilFresh(button){
- const requested=button.id==='socialGenerateVerse'?'verse':button.id==='socialGeneratePrayer'?'prayer':button.id==='dmSocialFreshSelected'?type():null;
- const before=snapshot(requested||type());
- const seen=historySet(requested||type());
- if(key(before))seen.add(key(before));
- let accepted=null;
- for(let i=0;i<80;i++){
-  bypass=true;
-  try{button.click()}finally{bypass=false}
-  const now=snapshot(requested||type());
-  const k=key(now);
-  if(k && !seen.has(k)){accepted=now;break}
- }
- if(accepted)return;
- /* Restore the previous visible item instead of leaving a recycled result on screen. */
+function restore(before){
  if(before.type==='prayer'){
   const el=$('#socialPrayer');if(el){el.value=before.body;el.dispatchEvent(new Event('input',{bubbles:true}))}
  }else{
-  const v=$('#socialVerse'),r=$('#socialReference');if(v){v.value=before.body;v.dispatchEvent(new Event('input',{bubbles:true}))}if(r){r.value=before.reference;r.dispatchEvent(new Event('input',{bubbles:true}))}
+  const v=$('#socialVerse'),r=$('#socialReference');
+  if(v){v.value=before.body;v.dispatchEvent(new Event('input',{bubbles:true}))}
+  if(r){r.value=before.reference;r.dispatchEvent(new Event('input',{bubbles:true}))}
  }
- toast(before.type==='prayer'?'No genuinely new prayer was available from the offline combinations. Try another theme, or use Allow Repost for an older prayer.':'All currently available offline Bible verses have been generated. No older verse was recycled.');
+}
+function generateFresh(button){
+ const requested=button.id==='socialGenerateVerse'?'verse':button.id==='socialGeneratePrayer'?'prayer':button.id==='dmSocialFreshSelected'?type():null;
+ const target=requested||type();
+ const before=snapshot(target);
+ const seen=historySet(target);
+ if(key(before))seen.add(key(before));
+ bypass=true;
+ try{button.click()}finally{bypass=false}
+ const now=snapshot(target),k=key(now);
+ if(k&&!seen.has(k))return;
+ restore(before);
+ toast(target==='prayer'
+  ? 'Offline prayer pool has no genuinely new prayer available right now. No previous prayer was recycled.'
+  : 'Offline Bible verse pool is exhausted. No previous verse was recycled.');
 }
 window.addEventListener('click',e=>{
  if(bypass)return;
  const b=e.target.closest('button');if(!b||!directId(b.id))return;
  e.preventDefault();e.stopImmediatePropagation();
- generateUntilFresh(b);
+ generateFresh(b);
 },true);
 })();
