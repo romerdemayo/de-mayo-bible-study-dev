@@ -1,64 +1,17 @@
-/* De Mayo Bible Studies - Social Studio confirmed posting workflow */
+/* De Mayo Bible Studies - Social Studio confirmed posting + repost controls */
 (function(){
 'use strict';
-const POSTED_HISTORY='dm_social_v22_posted_history';
-const PENDING_KEY='dm_social_share_pending';
-const $=s=>document.querySelector(s);
-function read(key){try{const v=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(v)?v:[]}catch{return []}}
-function write(key,value){localStorage.setItem(key,JSON.stringify(value))}
-function clean(v=''){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
-function notify(message){if(typeof window.toast==='function')window.toast(message)}
-function currentItem(){
- const type=$('#socialType')?.value==='prayer'?'prayer':'verse';
- const body=type==='prayer'?$('#socialPrayer')?.value:$('#socialVerse')?.value;
- if(!String(body||'').trim())return null;
- const reference=type==='prayer'?'Prayer':($('#socialReference')?.value||'');
- const caption=$('#socialCaption')?.value||'';
- const hashtags=$('#socialHashtags')?.value||'';
- return {type,reference,body:String(body).trim(),caption,hashtags,platform:'Facebook',postedAt:Date.now(),signature:clean(`${type}|${reference}|${body}|${caption}`)};
-}
-function rememberPosted(item){
- const arr=read(POSTED_HISTORY).filter(x=>x.signature!==item.signature);
- arr.unshift(item);write(POSTED_HISTORY,arr.slice(0,500));
- notify('Saved to posted history. Social Studio will avoid repeating it.');
- refreshPostedSummary();
-}
-function hideManualButton(){
- let style=$('#dmShareWorkflowStyle');
- if(!style){style=document.createElement('style');style.id='dmShareWorkflowStyle';style.textContent='#dmSocialMarkPosted{display:none!important}';document.head.appendChild(style)}
-}
-function refreshPostedSummary(){
- hideManualButton();
- const panel=$('#dmSocialV2Panel');if(!panel)return;
- const count=read(POSTED_HISTORY).length;
- let summary=$('#dmConfirmedPostedSummary');
- if(!count){summary?.remove();return}
- if(!summary){summary=document.createElement('p');summary.id='dmConfirmedPostedSummary';summary.className='small-note';panel.appendChild(summary)}
- summary.innerHTML=`✅ <b>${count}</b> confirmed Facebook ${count===1?'post':'posts'} protected from repeats.`;
-}
-function armConfirmation(){
- const item=currentItem();if(!item)return;
- sessionStorage.setItem(PENDING_KEY,JSON.stringify({item,armedAt:Date.now(),asked:false}));
- setTimeout(()=>askIfReady(false),2600);
-}
-function askIfReady(fromReturn){
- let pending;try{pending=JSON.parse(sessionStorage.getItem(PENDING_KEY)||'null')}catch{return}
- if(!pending||pending.asked||Date.now()-pending.armedAt<900)return;
- pending.asked=true;sessionStorage.setItem(PENDING_KEY,JSON.stringify(pending));
- const yes=window.confirm('Did you successfully post this to Facebook?\n\nPress OK only after the post has been published.');
- sessionStorage.removeItem(PENDING_KEY);
- if(yes)rememberPosted({...pending.item,postedAt:Date.now()});
- else if(fromReturn)notify('Not marked as posted. You can share it again later.');
-}
-document.addEventListener('click',event=>{
- const button=event.target.closest('button');if(!button)return;
- if(button.id==='socialShare'||button.id==='socialFacebook')armConfirmation();
- if(button.id==='socialGenerateVerse'||button.id==='socialGeneratePrayer'||button.id==='socialGenerateComplete'||button.id==='dmSocialFreshSelected')setTimeout(refreshPostedSummary,90);
- if(button.closest('[data-page="socialstudio"]'))setTimeout(refreshPostedSummary,90);
-},false);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>askIfReady(true),500)});
-window.addEventListener('focus',()=>setTimeout(()=>askIfReady(true),500));
-window.addEventListener('hashchange',()=>setTimeout(refreshPostedSummary,80));
-window.addEventListener('load',()=>setTimeout(refreshPostedSummary,80));
-setTimeout(refreshPostedSummary,80);
+const POSTED_HISTORY='dm_social_v22_posted_history',PENDING_KEY='dm_social_share_pending',$=s=>document.querySelector(s);
+function read(k){try{const v=JSON.parse(localStorage.getItem(k)||'[]');return Array.isArray(v)?v:[]}catch{return[]}}function write(k,v){localStorage.setItem(k,JSON.stringify(v))}function clean(v=''){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}function notify(m){window.toast?.(m)}function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function currentItem(){const type=$('#socialType')?.value==='prayer'?'prayer':'verse',body=type==='prayer'?$('#socialPrayer')?.value:$('#socialVerse')?.value;if(!String(body||'').trim())return null;const reference=type==='prayer'?'Prayer':($('#socialReference')?.value||''),caption=$('#socialCaption')?.value||'',hashtags=$('#socialHashtags')?.value||'';return{type,reference,body:String(body).trim(),caption,hashtags,platform:'Facebook',postedAt:Date.now(),protected:true,signature:clean(`${type}|${reference}|${body}|${caption}`)}}
+function rememberPosted(item){const arr=read(POSTED_HISTORY),same=x=>x.signature===item.signature||(x.type===item.type&&clean(x.body||'')===clean(item.body||''));const old=arr.find(same),saved={...old,...item,firstPostedAt:old?.firstPostedAt||old?.postedAt||item.postedAt,postedAt:item.postedAt,protected:true,repostCount:(old?.repostCount||0)+(old?1:0)};write(POSTED_HISTORY,[saved,...arr.filter(x=>!same(x))].slice(0,500));notify('Saved to posted history and protected from repeats.');refreshPostedSummary()}
+function setField(id,v,e='input'){const x=$(id);if(!x)return;x.value=v||'';x.dispatchEvent(new Event(e,{bubbles:true}))}
+function reopen(item){setField('#socialType',item.type,'change');if(item.type==='prayer')setField('#socialPrayer',item.body);else{setField('#socialVerse',item.body);setField('#socialReference',item.reference)}setField('#socialCaption',item.caption);setField('#socialHashtags',item.hashtags);window.scrollTo({top:0,behavior:'smooth'});notify('Previous post reopened. You can share it again intentionally.')}
+function toggle(index){const a=read(POSTED_HISTORY),x=a[index];if(!x)return;x.protected=x.protected===false?true:false;write(POSTED_HISTORY,a);notify(x.protected?'Protected again — generator will avoid it.':'Repost allowed — generator may use it again.');renderManager();refreshPostedSummary()}
+function renderManager(){const panel=$('#dmSocialV2Panel');if(!panel)return;let box=$('#dmPostedManager');if(!box){box=document.createElement('details');box.id='dmPostedManager';box.className='dm-posted-manager';panel.appendChild(box)}const items=read(POSTED_HISTORY);box.innerHTML=`<summary>🕘 Manage posted content (${items.length})</summary>${items.length?`<div class="dm-posted-list">${items.slice(0,50).map((x,i)=>`<article><div><b>${x.type==='prayer'?'🙏 Prayer':'📖 '+esc(x.reference||'Bible verse')}</b><small>First posted ${new Date(x.firstPostedAt||x.postedAt).toLocaleDateString()}${x.repostCount?` · reposted ${x.repostCount}×`:''}</small><p>${esc((x.body||'').replace(/\s+/g,' ').slice(0,100))}${(x.body||'').length>100?'…':''}</p></div><div><span class="dm-protect-state ${x.protected===false?'off':''}">${x.protected===false?'Repost allowed':'Protected'}</span><button type="button" data-posted-open="${i}">Repost Now</button><button type="button" data-posted-toggle="${i}">${x.protected===false?'Protect Again':'Allow Repost'}</button></div></article>`).join('')}</div>`:'<p class="small-note">No confirmed posted content yet.</p>'}`;if(!$('#dmPostedManagerStyle')){const s=document.createElement('style');s.id='dmPostedManagerStyle';s.textContent=`.dm-posted-manager{margin-top:12px}.dm-posted-manager summary{cursor:pointer;font-weight:800}.dm-posted-list article{display:grid;grid-template-columns:1fr auto;gap:10px;border-top:1px solid var(--border,#ddd);padding:10px 0}.dm-posted-list small{display:block;opacity:.7}.dm-posted-list p{margin:.3rem 0}.dm-posted-list article>div:last-child{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.dm-protect-state{font-size:.72rem;font-weight:800;padding:5px 8px;border-radius:999px;background:#e7f3ed}.dm-protect-state.off{background:#fff0cf}@media(max-width:650px){.dm-posted-list article{grid-template-columns:1fr}.dm-posted-list article>div:last-child{justify-content:flex-start}}`;document.head.appendChild(s)}box.querySelectorAll('[data-posted-open]').forEach(b=>b.onclick=()=>reopen(items[+b.dataset.postedOpen]));box.querySelectorAll('[data-posted-toggle]').forEach(b=>b.onclick=()=>toggle(+b.dataset.postedToggle))}
+function hideManualButton(){let s=$('#dmShareWorkflowStyle');if(!s){s=document.createElement('style');s.id='dmShareWorkflowStyle';s.textContent='#dmSocialMarkPosted{display:none!important}';document.head.appendChild(s)}}
+function refreshPostedSummary(){hideManualButton();const panel=$('#dmSocialV2Panel');if(!panel)return;const items=read(POSTED_HISTORY),count=items.filter(x=>x.protected!==false).length;let s=$('#dmConfirmedPostedSummary');if(!s){s=document.createElement('p');s.id='dmConfirmedPostedSummary';s.className='small-note';panel.appendChild(s)}s.innerHTML=`✅ <b>${count}</b> posted ${count===1?'item':'items'} protected from repeats${items.length-count?` · <b>${items.length-count}</b> allowed for repost`:''}.`;renderManager()}
+function armConfirmation(){const item=currentItem();if(item)sessionStorage.setItem(PENDING_KEY,JSON.stringify({item,armedAt:Date.now(),asked:false}))}
+function askIfReady(fromReturn){let p;try{p=JSON.parse(sessionStorage.getItem(PENDING_KEY)||'null')}catch{return}if(!p||p.asked||Date.now()-p.armedAt<900)return;p.asked=true;sessionStorage.setItem(PENDING_KEY,JSON.stringify(p));const yes=confirm('Did you successfully post this to Facebook?\n\nPress OK only after the post has been published.');sessionStorage.removeItem(PENDING_KEY);if(yes)rememberPosted({...p.item,postedAt:Date.now()});else if(fromReturn)notify('Not marked as posted. You can share it again later.')}
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='socialShare'||b.id==='socialFacebook'){armConfirmation();setTimeout(()=>askIfReady(false),2600)}if(['socialGenerateVerse','socialGeneratePrayer','socialGenerateComplete','dmSocialFreshSelected'].includes(b.id))setTimeout(refreshPostedSummary,90);if(b.closest('[data-page="socialstudio"]'))setTimeout(refreshPostedSummary,90)},false);document.addEventListener('visibilitychange',()=>document.visibilityState==='visible'&&setTimeout(()=>askIfReady(true),500));window.addEventListener('focus',()=>setTimeout(()=>askIfReady(true),500));window.addEventListener('hashchange',()=>setTimeout(refreshPostedSummary,80));window.addEventListener('load',()=>setTimeout(refreshPostedSummary,80));setTimeout(refreshPostedSummary,80);
 })();
