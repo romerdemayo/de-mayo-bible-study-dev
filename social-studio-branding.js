@@ -7,9 +7,13 @@ const MARKER='--- De Mayo Bible Studies ---';
 const $=s=>document.querySelector(s);
 let applying=false,timer=0;
 
-const defaults={enabled:true,style:'invitation'};
+const defaults={enabled:false,style:'invitation'};
 function readSettings(){try{return {...defaults,...JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}}catch{return {...defaults}}}
 function saveSettings(next){localStorage.setItem(SETTINGS_KEY,JSON.stringify(next))}
+if(localStorage.getItem('dm_social_no_link_growth_v1')!=='done'){
+ saveSettings({...readSettings(),enabled:false});
+ localStorage.setItem('dm_social_no_link_growth_v1','done');
+}
 function notify(message){if(typeof window.toast==='function')window.toast(message)}
 function currentType(){return $('#socialType')?.value==='prayer'?'prayer':'verse'}
 function footerText(type,style){
@@ -63,9 +67,9 @@ function renderSettings(){
  if(!card){card=document.createElement('article');card.id='dmSocialBrandingSettings';card.className='card';const anchor=$('#dmSocialV2Panel')||controls;anchor.insertAdjacentElement('afterend',card)}
  const settings=readSettings();
  card.innerHTML=`<div class="section-heading compact"><div><span class="eyebrow">MINISTRY BRANDING</span><h3>📖 Bring readers back to the Bible app</h3></div></div>
- <label class="check-row"><input type="checkbox" id="dmBrandingEnabled" ${settings.enabled?'checked':''}> Include the De Mayo Bible Studies link in captions</label>
+ <label class="check-row"><input type="checkbox" id="dmBrandingEnabled" ${settings.enabled?'checked':''}> Include the De Mayo Bible Studies link in captions (not recommended for Facebook reach)</label>
  <label>Caption footer style<select id="dmBrandingStyle"><option value="invitation" ${settings.style==='invitation'?'selected':''}>Invitation</option><option value="simple" ${settings.style==='simple'?'selected':''}>Simple</option><option value="minimal" ${settings.style==='minimal'?'selected':''}>Minimal</option></select></label>
- <p class="small-note">The production link appears once inside the caption. Facebook will make the full URL clickable after posting.</p>
+ <p class="small-note">For better Facebook reach, keep this off. The production link remains available here when you need to copy it separately.</p>
  <p><a href="${MAIN_URL}" target="_blank" rel="noopener noreferrer" class="text-link">${MAIN_URL}</a></p>
  <div class="social-auto-actions"><button class="ghost" id="dmApplyBranding">Apply to current caption</button></div>`;
  $('#dmBrandingEnabled').onchange=e=>{const next={...readSettings(),enabled:e.target.checked};saveSettings(next);updateCaption(true);notify(e.target.checked?'Website link enabled':'Website link removed')};
