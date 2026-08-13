@@ -120,8 +120,6 @@ URL.revokeObjectURL=function(url){
   return originalRevoke(url);
 };
 window.DM_MP4_RESULT_READY=acceptResult;
-window.addEventListener('load',ensurePanel);
-window.addEventListener('hashchange',()=>setTimeout(ensurePanel,0));
-document.addEventListener('dm-reel-studio-ready',ensurePanel);
+new MutationObserver(ensurePanel).observe(document.documentElement,{childList:true,subtree:true});
 window.addEventListener('pagehide',()=>{if(latestUrl)originalRevoke(latestUrl);});
 })();
