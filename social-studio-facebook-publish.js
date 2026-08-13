@@ -157,7 +157,7 @@ function build(){
 function boot(){setTimeout(build,140)}
 window.addEventListener('load',boot);
 window.addEventListener('hashchange',boot);
-document.addEventListener('dm-social-studio-ready',boot);
+new MutationObserver(()=>{if(location.hash==='#socialstudio')build()}).observe(document.documentElement,{childList:true,subtree:true});
 boot();
 window.DM_SOCIAL_FACEBOOK={publish,forgetKey,endpoint:API};
 })();
