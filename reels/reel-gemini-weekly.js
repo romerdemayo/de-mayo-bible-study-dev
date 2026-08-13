@@ -7,6 +7,8 @@ const POSTED_KEY='dm_reel_posted_history_v1';
 const MAIN_APP_URL='https://romerdemayo.github.io/de-mayo-bible-study/';
 const $=s=>document.querySelector(s);
 let busy=false;
+const HOOKS={English:['God has not forgotten you.','Pause—this may be the reminder you need today.','Read this if your heart needs encouragement.','Take this truth with you today.'],Tagalog:['Hindi ka nakakalimutan ng Diyos.','Sandali—maaaring ito ang paalala na kailangan mo ngayon.','Basahin ito kung kailangan ng puso mo ng lakas.','Dalhin mo ang katotohanang ito ngayong araw.']};
+const QUESTIONS={English:['What are you trusting God for today?','Which part of this message speaks to you?','Who might need this encouragement today?','How has God been faithful to you?'],Tagalog:['Ano ang ipinagkakatiwala mo sa Diyos ngayon?','Aling bahagi ng mensaheng ito ang nangusap sa iyo?','Sino ang maaaring mangailangan ng paalalang ito?','Paano naging tapat ang Diyos sa iyo?']};
 
 function read(key){try{const value=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(value)?value:[]}catch{return[]}}
 function write(key,value){localStorage.setItem(key,JSON.stringify(value.slice(0,120)))}
@@ -49,8 +51,8 @@ function themePrompt(){
   const theme=clean($('#dmTheme')?.selectedOptions?.[0]?.textContent||'Hope');
   const language=$('#dmReelLanguage')?.value||'English';
   return language==='Tagalog'
-    ? `${theme}. Write the verse, reflection, prayer, caption and closing message in natural Tagalog. Keep the Bible reference in its standard form.`
-    : `${theme}. Write clear, warm English suitable for a weekly Facebook Reel.`;
+    ? `${theme}. Write the verse, reflection, prayer, caption and closing message in natural Tagalog. Keep the Bible reference in its standard form. Begin the caption with a short emotional hook, end with one sincere discussion question, use no URL, and return only 3 to 5 relevant hashtags.`
+    : `${theme}. Write clear, warm English suitable for a weekly Facebook Reel. Begin the caption with a short emotional hook, end with one sincere discussion question, use no URL, and return only 3 to 5 relevant hashtags.`;
 }
 function chooseSurpriseTheme(){
   const select=$('#dmTheme');
@@ -115,7 +117,9 @@ function updatePostedStatus(){
 }
 function hashtagsText(item){
   const raw=clean(item?.hashtags)||'#BibleVerse #ChristianEncouragement #Faith #DeMayoBibleStudies';
-  return raw.split(/[\s,]+/).filter(Boolean).map(tag=>tag.startsWith('#')?tag:'#'+tag).join(' ');
+  const tags=[...new Set(raw.split(/[\s,]+/).filter(Boolean).map(tag=>tag.startsWith('#')?tag:'#'+tag))].slice(0,5);
+  if(!tags.some(tag=>tag.toLowerCase()==='#demayobiblestudies')){if(tags.length===5)tags[4]='#DeMayoBibleStudies';else tags.push('#DeMayoBibleStudies');}
+  return tags.join(' ');
 }
 function removeCaptionLinks(value){
   return String(value||'')
@@ -125,8 +129,13 @@ function removeCaptionLinks(value){
     .trim();
 }
 function captionText(item){
-  const main=removeJoinThanks(item?.caption)||`${item?.title||'Weekly Bible Encouragement'}\n\n${item?.reflection||''}`.trim();
-  return removeCaptionLinks(main);
+  const language=item?.language==='Tagalog'?'Tagalog':'English';
+  const seed=String(item?.reference||item?.title||'De Mayo').split('').reduce((sum,char)=>sum+char.charCodeAt(0),0);
+  const hook=HOOKS[language][seed%HOOKS[language].length],question=QUESTIONS[language][seed%QUESTIONS[language].length];
+  let main=removeCaptionLinks(removeJoinThanks(item?.caption)||`${item?.title||'Weekly Bible Encouragement'}\n\n${item?.reflection||''}`.trim()).replace(/(?:^|\s)#[\p{L}\p{N}_-]+/gu,'').replace(/\n{3,}/g,'\n\n').trim();
+  if(!main.toLowerCase().startsWith(hook.toLowerCase()))main=`${hook}\n\n${main}`;
+  if(!/[?？]\s*$/.test(main))main=`${main}\n\n${question}`;
+  return main.trim();
 }
 async function copy(value,label){
   try{await navigator.clipboard.writeText(value);status(`${label} copied.`,'success');}
