@@ -1,0 +1,34 @@
+/* De Mayo Bible Studies - weekly Reel schedule and approval manager */
+(function(){
+'use strict';
+const KEY='dm_reel_schedule_manager_v1';
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const $=s=>document.querySelector(s);
+function read(){try{return {...defaults(),...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{return defaults()}}
+function defaults(){return{enabled:false,day:6,time:'09:00',theme:'hope',language:'English',status:'not-generated',draft:null,approvedAt:null,updatedAt:null}}
+function write(value){const next={...value,updatedAt:new Date().toISOString()};localStorage.setItem(KEY,JSON.stringify(next));renderStatus(next);return next}
+function toast(message,type='info'){window.toast?.(message);const box=$('#dmReelScheduleStatus');if(box){box.hidden=false;box.dataset.type=type;box.textContent=message}}
+function nextDate(day,time){const now=new Date(),next=new Date(now),parts=String(time||'09:00').split(':');let add=(Number(day)-now.getDay()+7)%7;next.setHours(Number(parts[0]||9),Number(parts[1]||0),0,0);if(add===0&&next<=now)add=7;next.setDate(now.getDate()+add);return next}
+function content(){return window.DM_REEL_CREATOR?.getContent?.()||null}
+function saveSettings(){const state=read();state.enabled=$('#dmReelScheduleEnabled')?.checked||false;state.day=Number($('#dmReelScheduleDay')?.value||6);state.time=$('#dmReelScheduleTime')?.value||'09:00';state.theme=$('#dmTheme')?.value||state.theme;state.language=$('#dmReelLanguage')?.value||state.language;write(state);toast(state.enabled?'Weekly approval schedule enabled.':'Weekly approval schedule paused.','success')}
+function saveDraft(){const item=content();if(!item?.reference)return toast('Generate or open a Reel first.','error');const state=read();state.draft={...item,savedAt:new Date().toISOString()};state.theme=$('#dmTheme')?.value||state.theme;state.language=$('#dmReelLanguage')?.value||state.language;state.status='awaiting-approval';state.approvedAt=null;write(state);toast('Reel saved for review. It will not post automatically.','success')}
+function approve(){const state=read();if(!state.draft)return toast('Save a Reel for review first.','error');state.status='approved';state.approvedAt=new Date().toISOString();write(state);toast('Reel approved and ready for the scheduled posting workflow.','success')}
+function reopen(){const state=read();if(!state.draft)return toast('There is no saved Reel draft yet.','error');try{window.DM_REEL_CREATOR?.setGeneratedContent?.(state.draft);if($('#dmTheme'))$('#dmTheme').value=state.theme||'hope';if($('#dmReelLanguage'))$('#dmReelLanguage').value=state.language||'English';window.scrollTo({top:0,behavior:'smooth'});toast('Scheduled Reel opened for review.','success')}catch(error){console.error(error);toast('The saved Reel could not be reopened.','error')}}
+function clearDraft(){if(!confirm('Remove the saved Reel from the approval queue?'))return;const state=read();state.draft=null;state.status='not-generated';state.approvedAt=null;write(state);toast('Scheduled Reel draft removed.','success')}
+function renderStatus(state=read()){
+ const box=$('#dmReelScheduleSummary');if(!box)return;
+ const next=nextDate(state.day,state.time),label=state.status==='approved'?'✅ Approved':state.status==='awaiting-approval'?'🟠 Awaiting approval':'⚪ Not generated';
+ box.innerHTML=`<b>${label}</b><span>${state.enabled?'Enabled':'Paused'} · ${DAYS[state.day]} at ${state.time}</span><small>Next planned time: ${next.toLocaleString([], {weekday:'long',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</small>${state.draft?`<small>${state.draft.reference||'Reel'} · ${state.draft.title||'Weekly Reel'}</small>`:''}`;
+ const approve=$('#dmApproveScheduledReel');if(approve){approve.disabled=!state.draft||state.status==='approved';approve.textContent=state.status==='approved'?'✓ Approved':'✓ Approve Reel'}
+}
+function install(){
+ if(location.hash!=='#reelcreator'||!window.DM_REEL_CREATOR||$('#dmReelScheduleManager'))return;
+ const anchor=$('#dmReelPostingPanel')||$('.dm-reel-actions');if(!anchor)return;
+ const state=read(),card=document.createElement('section');card.id='dmReelScheduleManager';card.className='card';
+ card.innerHTML=`<div class="dm-reel-schedule-head"><div><span class="pill">PHASE 2 · APPROVAL MODE</span><h3>🗓 Weekly Reel Schedule Manager</h3><p>Prepare a weekly Reel in advance. Nothing is posted without your approval.</p></div><label class="dm-reel-check"><input id="dmReelScheduleEnabled" type="checkbox" ${state.enabled?'checked':''}> Enable weekly plan</label></div><div class="dm-reel-schedule-grid"><label>Posting day<select id="dmReelScheduleDay">${DAYS.map((day,index)=>`<option value="${index}" ${state.day===index?'selected':''}>${day}</option>`).join('')}</select></label><label>Posting time<input id="dmReelScheduleTime" type="time" value="${state.time}"></label><button id="dmSaveReelSchedule">💾 Save Schedule</button></div><div id="dmReelScheduleSummary" class="dm-reel-schedule-summary"></div><div class="dm-reel-actions"><button id="dmSaveReelForReview" class="primary">📥 Save Current Reel for Review</button><button id="dmOpenScheduledReel">✏️ Open Draft</button><button id="dmApproveScheduledReel">✓ Approve Reel</button><button id="dmClearScheduledReel">Remove Draft</button></div><div id="dmReelScheduleStatus" class="dm-export-status" hidden></div><p class="small-note"><b>Approval mode:</b> approval records that the Reel is ready. It does not publish to Facebook yet. Automatic publishing will only be connected after this review workflow is tested.</p>`;
+ anchor.insertAdjacentElement('afterend',card);
+ if(!$('#dmReelScheduleStyles')){const style=document.createElement('style');style.id='dmReelScheduleStyles';style.textContent=`#dmReelScheduleManager{display:grid;gap:14px}.dm-reel-schedule-head{display:flex;justify-content:space-between;gap:18px;align-items:start}.dm-reel-schedule-head h3{margin:.35rem 0}.dm-reel-schedule-head p{margin:0}.dm-reel-schedule-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}.dm-reel-schedule-grid label{display:grid;gap:6px;font-weight:700}.dm-reel-schedule-summary{display:grid;gap:4px;padding:14px;border-radius:13px;background:#eef6f2}.dm-reel-schedule-summary span,.dm-reel-schedule-summary small{display:block}@media(max-width:650px){.dm-reel-schedule-head{display:grid}.dm-reel-schedule-grid{grid-template-columns:1fr 1fr}.dm-reel-schedule-grid button{grid-column:1/-1}}`;document.head.appendChild(style)}
+ $('#dmSaveReelSchedule').onclick=saveSettings;$('#dmSaveReelForReview').onclick=saveDraft;$('#dmOpenScheduledReel').onclick=reopen;$('#dmApproveScheduledReel').onclick=approve;$('#dmClearScheduledReel').onclick=clearDraft;renderStatus(state);
+}
+window.addEventListener('load',install);window.addEventListener('hashchange',()=>setTimeout(install,0));document.addEventListener('dm-reel-studio-ready',install);
+})();
