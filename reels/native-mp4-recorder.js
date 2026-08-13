@@ -76,5 +76,6 @@ function installSoundControls(actions){
   syncSoundChoice();
 }
 function install(){const actions=document.querySelector('.dm-reel-actions');if(!actions)return;installSoundControls(actions);document.querySelectorAll("#dmSaveVideo,#dmCreateMp4").forEach(el=>el.style.display="none");const old=document.querySelector('#dmBrowserMp4');if(old)old.style.display='none';if(document.querySelector('#dmNativeMp4')){syncCreateButton();return;}const b=document.createElement('button');b.id='dmNativeMp4';b.type='button';b.className='primary';b.textContent='🎬 Create MP4';b.onclick=create;actions.appendChild(b);syncCreateButton();document.querySelectorAll('.dm-browser-mp4-guide').forEach(el=>{el.innerHTML=IOS?'<h3>Save to iPhone Photos</h3><p>Choose music, use a <b>15-second Reel</b>, tap <b>Create MP4 with Sound</b>, keep Safari open, then tap <b>Share MP4</b> and choose <b>Save Video</b>.</p>':'<h3>MP4 export with sound</h3><p>Choose music, tap <b>Create MP4 with Sound</b>, then use <b>Save MP4 As…</b>.</p>';});}
-window.addEventListener('load',install);window.addEventListener('hashchange',()=>setTimeout(install,0));document.addEventListener('dm-reel-studio-ready',install);
+new MutationObserver(install).observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('load',install);
 })();
+
