@@ -61,6 +61,11 @@ function showResult(blob,url){
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
   setStatus('MP4 created. Choose Save MP4 As… to write it to your Mac.');
 }
+function acceptResult(blob){
+  if(!(blob instanceof Blob)||!blob.size){setStatus('The finished MP4 could not be prepared for saving or sharing.','error');return;}
+  if(latestUrl)originalRevoke(latestUrl);
+  showResult(blob,originalCreate(blob));
+}
 async function saveLatest(){
   if(!latestBlob){setStatus('Create the MP4 first.','error');return;}
   try{
@@ -97,7 +102,7 @@ async function shareLatest(){
   if(!latestBlob){setStatus('Create the MP4 first.','error');return;}
   const file=new File([latestBlob],latestName||fileName(),{type:'video/mp4'});
   try{
-    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+    if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){
       await navigator.share({files:[file],title:'De Mayo Bible Reel',text:'Created with De Mayo Bible Studies'});
       setStatus('Share menu opened. On iPhone choose Save Video to place the Reel in Photos.','success');
       return;
@@ -107,13 +112,14 @@ async function shareLatest(){
 }
 URL.createObjectURL=function(value){
   const url=originalCreate(value);
-  if(value instanceof Blob&&value.type==='video/mp4')showResult(value,url);
+  if(value instanceof Blob&&/^video\/mp4/i.test(value.type||''))showResult(value,url);
   return url;
 };
 URL.revokeObjectURL=function(url){
   if(url===latestUrl)return;
   return originalRevoke(url);
 };
+window.DM_MP4_RESULT_READY=acceptResult;
 new MutationObserver(ensurePanel).observe(document.documentElement,{childList:true,subtree:true});
 window.addEventListener('pagehide',()=>{if(latestUrl)originalRevoke(latestUrl);});
 })();
