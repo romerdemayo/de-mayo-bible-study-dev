@@ -116,5 +116,5 @@ window.addEventListener('load',boot);window.addEventListener('hashchange',boot);
 document.addEventListener('input',e=>{if(['socialType','socialVerse','socialPrayer','socialReference','socialCaption','socialHashtags'].includes(e.target?.id))syncEditorFromSource()});
 document.addEventListener('change',e=>{if(e.target?.id==='socialType')syncEditorFromSource()});
 document.addEventListener('click',e=>{if(e.target.closest('#dmPremiumGenerateControls,#dmSocialV2Panel,[data-page="socialstudio"]'))setTimeout(syncEditorFromSource,140)});
-new MutationObserver(()=>{if(location.hash==='#socialstudio'&&!$('#dmPublishingWorkflow'))boot()}).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener('dm-social-studio-ready',boot);
 })();
