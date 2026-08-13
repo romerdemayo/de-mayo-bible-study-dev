@@ -11,7 +11,7 @@ const CORE_BASE=`https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/
 let ffmpeg=null,loading=null,busy=false;
 const EXPORT_WIDTH=1080;
 const EXPORT_HEIGHT=1920;
-const EXPORT_FPS=IOS?20:24;
+const EXPORT_FPS=30;
 function status(message,type='info'){
   if(typeof window.toast==='function')window.toast(message);
   const box=document.querySelector('#dmExportStatus');
