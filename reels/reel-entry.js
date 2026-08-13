@@ -16,6 +16,7 @@ function openV2(event){
   }
   try{
     renderV2();
+    document.dispatchEvent(new CustomEvent('dm-reel-studio-ready'));
     if(location.hash!=='#reelcreator')history.replaceState(null,'','#reelcreator');
     document.body.classList.remove('menu-open');
     const sidebar=document.querySelector('#sidebar');
