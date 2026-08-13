@@ -6,7 +6,7 @@ const MOBILE=IOS||/Android/i.test(navigator.userAgent);
 const MP4_TYPES=['video/mp4;codecs=avc1.42E01E','video/mp4;codecs=avc1.424028','video/mp4'];
 const EXPORT_WIDTH=1080;
 const EXPORT_HEIGHT=1920;
-const EXPORT_FPS=IOS?20:24;
+const EXPORT_FPS=30;
 const EXPORT_VIDEO_BITRATE=IOS?5000000:8000000;
 const SUPPORTED=!!(window.MediaRecorder&&HTMLCanvasElement.prototype.captureStream&&MP4_TYPES.some(t=>MediaRecorder.isTypeSupported(t)));
 window.DM_NATIVE_MP4_SUPPORTED=SUPPORTED;
