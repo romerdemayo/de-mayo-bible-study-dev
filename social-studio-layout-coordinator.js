@@ -51,5 +51,5 @@ function schedule(){clearTimeout(timer);timer=setTimeout(()=>{mount();setTimeout
 window.addEventListener('load',schedule);
 window.addEventListener('hashchange',schedule);
 document.addEventListener('click',e=>{if(e.target.closest('[data-page="socialstudio"],a[href="#socialstudio"]'))schedule()});
-new MutationObserver(()=>{if(location.hash==='#socialstudio')schedule()}).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener('dm-social-studio-ready',schedule);
 })();
