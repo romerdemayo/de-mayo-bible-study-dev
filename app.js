@@ -737,7 +737,6 @@ function socialStudio(){
  $('#socialFacebook').onclick=socialOpenFacebook;
  $('#socialSaveDraft').onclick=()=>{const c=socialStudioContent();if(!c.body)return toast(ui('Add a verse or prayer first.','Maglagay muna ng verse o prayer.'));let arr=store.get(SOCIAL_STUDIO_KEY,[]);const sig=(socialStudioState.type+'|'+c.body+'|'+c.reference).toLowerCase().replace(/\s+/g,' ').trim();if(arr.some(x=>x.signature===sig)&&!confirm(ui('A matching draft already exists. Save another copy?','May kaparehong draft na. Mag-save pa rin?')))return;arr.unshift({...socialStudioState,saved:Date.now(),signature:sig});store.set(SOCIAL_STUDIO_KEY,arr.slice(0,30));toast(ui('Draft saved','Na-save ang draft'));socialStudio()};
  document.querySelectorAll('[data-social-load]').forEach(b=>b.onclick=()=>{socialStudioState={...socialStudioState,...drafts[+b.dataset.socialLoad]};socialStudioSync();window.scrollTo({top:0,behavior:'smooth'})});document.querySelectorAll('[data-social-delete]').forEach(b=>b.onclick=()=>{let arr=store.get(SOCIAL_STUDIO_KEY,[]);arr.splice(+b.dataset.socialDelete,1);store.set(SOCIAL_STUDIO_KEY,arr);socialStudio()});
- document.dispatchEvent(new CustomEvent('dm-social-studio-ready'));
 }
 
 
