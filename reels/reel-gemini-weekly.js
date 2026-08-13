@@ -117,9 +117,16 @@ function hashtagsText(item){
   const raw=clean(item?.hashtags)||'#BibleVerse #ChristianEncouragement #Faith #DeMayoBibleStudies';
   return raw.split(/[\s,]+/).filter(Boolean).map(tag=>tag.startsWith('#')?tag:'#'+tag).join(' ');
 }
+function removeCaptionLinks(value){
+  return String(value||'')
+    .replace(/https?:\/\/\S+/gi,'')
+    .replace(/^\s*(?:Read, study and grow with us|Visit|Learn more)\s*:\s*$/gim,'')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim();
+}
 function captionText(item){
   const main=removeJoinThanks(item?.caption)||`${item?.title||'Weekly Bible Encouragement'}\n\n${item?.reflection||''}`.trim();
-  return `${main}\n\nRead, study and grow with us:\n${MAIN_APP_URL}`.trim();
+  return removeCaptionLinks(main);
 }
 async function copy(value,label){
   try{await navigator.clipboard.writeText(value);status(`${label} copied.`,'success');}
@@ -158,12 +165,12 @@ function install(){
   }
   if(actions&&!$('#dmReelPostingPanel')){
     const panel=document.createElement('section');panel.id='dmReelPostingPanel';panel.className='card';
-    panel.innerHTML='<h3>📱 Facebook caption and hashtags</h3><label>Caption<textarea id="dmReelCaption" rows="6" readonly></textarea></label><label>Hashtags<textarea id="dmReelHashtags" rows="2" readonly></textarea></label><label>Main Bible app link<input id="dmReelAppLink" type="url" readonly></label><div class="dm-reel-actions"><button id="dmCopyReelCaption">📋 Copy Caption</button><button id="dmCopyReelHashtags"># Copy Hashtags</button><button id="dmCopyReelLink">🔗 Copy App Link</button><button id="dmCopyReelAll" class="primary">📋 Copy All</button></div><p class="small-note">Copy All includes the caption, main Bible app link and hashtags, ready to paste into Facebook.</p>';
+    panel.innerHTML='<h3>📱 Facebook Reel caption and hashtags</h3><label>Facebook Reel caption — no external link<textarea id="dmReelCaption" rows="6" readonly></textarea></label><label>Hashtags<textarea id="dmReelHashtags" rows="2" readonly></textarea></label><label>Optional Bible app link<input id="dmReelAppLink" type="url" readonly></label><div class="dm-reel-actions"><button id="dmCopyReelCaption">📋 Copy Caption</button><button id="dmCopyReelHashtags"># Copy Hashtags</button><button id="dmCopyReelLink">🔗 Copy App Link</button><button id="dmCopyReelAll" class="primary">📋 Copy Caption + Hashtags</button></div><p class="small-note">For better Facebook Reel reach, the caption and Copy Caption + Hashtags exclude the external link. Copy App Link remains available separately when you need it.</p>';
     const anchor=$('#dmPostedReelCount')||actions;anchor.insertAdjacentElement('afterend',panel);
     panel.querySelector('#dmCopyReelCaption').onclick=()=>copy($('#dmReelCaption').value,'Caption');
     panel.querySelector('#dmCopyReelHashtags').onclick=()=>copy($('#dmReelHashtags').value,'Hashtags');
     panel.querySelector('#dmCopyReelLink').onclick=()=>copy(MAIN_APP_URL,'Bible app link');
-    panel.querySelector('#dmCopyReelAll').onclick=()=>copy(`${$('#dmReelCaption').value}\n\n${$('#dmReelHashtags').value}`,'Caption, link and hashtags');
+    panel.querySelector('#dmCopyReelAll').onclick=()=>copy(`${$('#dmReelCaption').value}\n\n${$('#dmReelHashtags').value}`,'Caption and hashtags');
   }
   updatePostingPanel();
 }
