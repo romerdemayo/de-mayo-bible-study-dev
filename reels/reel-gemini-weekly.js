@@ -170,5 +170,5 @@ function install(){
 document.addEventListener('dm-reel-content-change',updatePostingPanel);
 window.addEventListener('load',install);
 window.addEventListener('hashchange',()=>setTimeout(install,100));
-document.addEventListener('dm-reel-studio-ready',install);
+new MutationObserver(()=>{if(location.hash==='#reelcreator'&&$('#dmRegenerate')&&!$('#dmReelGeminiControls'))install()}).observe(document.documentElement,{childList:true,subtree:true});
 })();
