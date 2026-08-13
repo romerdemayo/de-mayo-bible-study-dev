@@ -20,6 +20,6 @@ function intercept(e){if(fallbackPass)return;const b=e.target.closest?.('button'
 document.addEventListener('click',intercept,true);
 function refreshUI(){if(location.hash!=='#socialstudio')return;ensureStatus();relabelLegacyPanel();if(lastSource==='ready')status('✨ AI Generator Ready — Gemini','ready')}
 function boot(){clearTimeout(watchTimer);watchTimer=setTimeout(refreshUI,120)}
-window.addEventListener('load',boot);window.addEventListener('hashchange',boot);new MutationObserver(()=>{if(location.hash==='#socialstudio')boot()}).observe(document.documentElement,{childList:true,subtree:true});boot();
+window.addEventListener('load',boot);window.addEventListener('hashchange',boot);document.addEventListener('dm-social-studio-ready',boot);boot();
 window.DM_SOCIAL_GEMINI={generate,endpoint:API};
 })();
