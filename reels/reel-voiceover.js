@@ -2,13 +2,27 @@
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
+const MAX_RECORDING_SECONDS=90,MAX_SCRIPT_WORDS=150;
 let recorder=null,stream=null,chunks=[],startedAt=0,timer=null,previewUrl='',scrollFrame=0,scrollLast=0,scrollDelayUntil=0,scrollPaused=false;
 window.DM_REEL_VOICEOVER_BLOB=null;
 window.DM_REEL_VOICEOVER_DURATION=0;
 function status(message,type='info'){const box=$('#dmVoiceoverStatus');if(box){box.hidden=false;box.dataset.type=type;box.textContent=message}window.toast?.(message)}
-function script(){const c=window.DM_REEL_CREATOR?.getContent?.()||{};return [c.title,c.verse,c.reference,c.reflection,'Let us pray.',c.prayer].filter(Boolean).join('\n\n')}
-function refreshScript(){const area=$('#dmVoiceoverScript');if(area){area.value=script();area.scrollTop=0}}
-function scrollSpeed(){return Number($('#dmVoiceoverSpeed')?.value||18)}
+function words(value){return String(value||'').trim().split(/\s+/).filter(Boolean)}
+function shorten(value,limit){
+ const text=String(value||'').trim(),all=words(text);if(all.length<=limit)return text;
+ const sentences=text.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[];let chosen=[],used=0;
+ for(const sentence of sentences){const count=words(sentence).length;if(used+count>limit)break;chosen.push(sentence.trim());used+=count}
+ return chosen.length?chosen.join(' '):all.slice(0,limit).join(' ')+'…';
+}
+function script(){
+ const c=window.DM_REEL_CREATOR?.getContent?.()||{},verse=String(c.verse||'').trim(),reference=String(c.reference||'').trim();
+ const fixed=words(`${verse} ${reference} Let us pray.`).length,reservedPrayer=40;
+ const reflection=shorten(c.reflection,Math.max(24,Math.min(55,MAX_SCRIPT_WORDS-fixed-reservedPrayer)));
+ const prayerLimit=Math.max(28,MAX_SCRIPT_WORDS-words(`${verse} ${reference} ${reflection} Let us pray.`).length);
+ return [verse,reference,reflection,'Let us pray.',shorten(c.prayer,prayerLimit)].filter(Boolean).join('\n\n');
+}
+function refreshScript(){const area=$('#dmVoiceoverScript');if(area){area.value=script();area.scrollTop=0;const count=words(area.value).length,estimate=Math.ceil(count/105*60);const info=$('#dmVoiceoverWordCount');if(info)info.textContent=`${count} words • about ${Math.min(90,estimate)} seconds at a calm reading pace`}}
+function scrollSpeed(){return Number($('#dmVoiceoverSpeed')?.value||10)}
 function stopPrompter(){if(scrollFrame)cancelAnimationFrame(scrollFrame);scrollFrame=0;scrollLast=0}
 function updatePrompterButton(){const button=$('#dmTogglePrompter');if(button){button.textContent=scrollPaused?'▶ Resume Scrolling':'⏸ Pause Scrolling';button.disabled=!recorder||recorder.state==='inactive'}}
 function scrollPrompter(time){
@@ -25,7 +39,7 @@ function setPrompterFont(){const area=$('#dmVoiceoverScript');const value=Number
 function setSpeedLabel(){const output=$('#dmVoiceoverSpeedValue');if(output)output.textContent=`${scrollSpeed()} px/sec`}
 function supportedType(){return['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(type=>MediaRecorder.isTypeSupported(type))||''}
 function cleanupStream(){if(stream){stream.getTracks().forEach(track=>track.stop());stream=null}}
-function updateTimer(){const el=$('#dmVoiceoverTimer');if(el)el.textContent=`${Math.floor((Date.now()-startedAt)/60000)}:${String(Math.floor((Date.now()-startedAt)/1000)%60).padStart(2,'0')}`}
+function updateTimer(){const elapsed=(Date.now()-startedAt)/1000,el=$('#dmVoiceoverTimer');if(el)el.textContent=`${Math.floor(elapsed/60)}:${String(Math.floor(elapsed)%60).padStart(2,'0')} / 1:30`;if(elapsed>=MAX_RECORDING_SECONDS&&recorder?.state!=='inactive'){status('90-second recording complete. Finishing your voice-over…','loading');stop()}}
 async function start(){
  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)return status('Voice recording is not supported in this browser.','error');
  try{
@@ -52,7 +66,7 @@ function remove(){window.DM_REEL_VOICEOVER_BLOB=null;window.DM_REEL_VOICEOVER_DU
 function install(){
  if(location.hash!=='#reelcreator'||!window.DM_REEL_CREATOR||$('#dmVoiceoverCard'))return;
  const actions=$('.dm-reel-actions');if(!actions)return;const card=document.createElement('section');card.id='dmVoiceoverCard';card.className='card';
- card.innerHTML='<div class="dm-voice-head"><div><span class="pill">OPTIONAL ORIGINAL NARRATION</span><h3>🎙 Record Voice-over</h3><p>Read the prepared script in your own voice. The teleprompter scrolls automatically while you record.</p></div><b id="dmVoiceoverTimer">0:00</b></div><label>Prepared script<textarea id="dmVoiceoverScript" class="dm-voice-prompter" rows="9" readonly></textarea></label><div class="dm-prompter-controls"><label>Text size <input id="dmVoiceoverFont" type="range" min="20" max="34" value="24"><output id="dmVoiceoverFontValue">24px</output></label><label>Scroll speed <input id="dmVoiceoverSpeed" type="range" min="8" max="36" value="18"><output id="dmVoiceoverSpeedValue">18 px/sec</output></label></div><div class="dm-reel-actions"><button id="dmStartVoiceover" class="primary">🎙 Start Recording</button><button id="dmStopVoiceover" hidden>⏹ Stop Recording</button><button id="dmTogglePrompter" disabled>⏸ Pause Scrolling</button><button id="dmRefreshVoiceoverScript">↻ Refresh Script</button><button id="dmDeleteVoiceover" disabled>Remove Voice-over</button></div><audio id="dmVoiceoverPreview" controls hidden></audio><div id="dmVoiceoverStatus" class="dm-export-status" hidden></div><p class="small-note">The script begins scrolling about two seconds after recording starts. Adjust the speed before or during recording. Your microphone recording stays on this device and is only mixed into the MP4 you create.</p>';
+ card.innerHTML='<div class="dm-voice-head"><div><span class="pill">OPTIONAL ORIGINAL NARRATION</span><h3>🎙 Record Voice-over</h3><p>Read the complete verse, short message and prayer. The script is prepared to fit within 90 seconds and scrolls automatically.</p></div><b id="dmVoiceoverTimer">0:00 / 1:30</b></div><label>Prepared 90-second script<textarea id="dmVoiceoverScript" class="dm-voice-prompter" rows="9" readonly></textarea></label><p id="dmVoiceoverWordCount" class="small-note"></p><div class="dm-prompter-controls"><label>Text size <input id="dmVoiceoverFont" type="range" min="20" max="34" value="24"><output id="dmVoiceoverFontValue">24px</output></label><label>Scroll speed <input id="dmVoiceoverSpeed" type="range" min="4" max="28" value="10"><output id="dmVoiceoverSpeedValue">10 px/sec</output></label></div><div class="dm-reel-actions"><button id="dmStartVoiceover" class="primary">🎙 Start Recording</button><button id="dmStopVoiceover" hidden>⏹ Stop Recording</button><button id="dmTogglePrompter" disabled>⏸ Pause Scrolling</button><button id="dmRefreshVoiceoverScript">↻ Refresh Script</button><button id="dmDeleteVoiceover" disabled>Remove Voice-over</button></div><audio id="dmVoiceoverPreview" controls hidden></audio><div id="dmVoiceoverStatus" class="dm-export-status" hidden></div><p class="small-note">Recording stops automatically at 1:30. Read naturally and use the speed control to keep the words comfortable. Your recording stays on this device and is only mixed into the MP4 you create.</p>';
  actions.insertAdjacentElement('beforebegin',card);refreshScript();
  const checklist=document.createElement('section');checklist.id='dmFacebookReelChecklist';checklist.className='card';checklist.innerHTML='<h3>✅ Before posting this Reel to Facebook</h3><ol><li>Create the MP4 and preview it.</li><li>Share MP4 to Facebook.</li><li>Set the audience to <b>Public</b>.</li><li>Select an available topic such as <b>Christianity, Faith, Bible, Prayer</b> or <b>Inspiration</b>.</li><li>Turn on <b>Captions</b> so Facebook can caption your recorded narration.</li><li>Paste the link-free caption and five hashtags.</li></ol><p class="small-note">Facebook topics and its Captions switch must be selected inside Facebook; the iPhone Share menu cannot set them automatically.</p>';card.insertAdjacentElement('afterend',checklist);
  if(!$('#dmVoiceoverPrompterStyles')){const style=document.createElement('style');style.id='dmVoiceoverPrompterStyles';style.textContent='.dm-voice-prompter{min-height:300px;line-height:1.55;scroll-behavior:auto;padding:20px;background:#101d19;color:#fff;border:3px solid #2b715e;border-radius:16px;font-weight:650;letter-spacing:.01em}.dm-prompter-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.dm-prompter-controls label{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;font-weight:700}.dm-prompter-controls input{width:100%}.dm-prompter-controls output{min-width:70px;text-align:right}.dm-voice-head{display:flex;justify-content:space-between;gap:12px}.dm-voice-head #dmVoiceoverTimer{font-size:1.35rem;white-space:nowrap}@media(max-width:640px){.dm-voice-prompter{min-height:46vh;max-height:46vh}.dm-prompter-controls{grid-template-columns:1fr}.dm-voice-head{align-items:flex-start}}';document.head.appendChild(style)}
