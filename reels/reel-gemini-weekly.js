@@ -132,9 +132,11 @@ function captionText(item){
   const language=item?.language==='Tagalog'?'Tagalog':'English';
   const seed=String(item?.reference||item?.title||'De Mayo').split('').reduce((sum,char)=>sum+char.charCodeAt(0),0);
   const hook=HOOKS[language][seed%HOOKS[language].length],question=QUESTIONS[language][seed%QUESTIONS[language].length];
+  const share=language==='Tagalog'?'Ibahagi ito sa isang taong maaaring mangailangan ng lakas ngayon.':'Share this with someone who may need encouragement today.';
   let main=removeCaptionLinks(removeJoinThanks(item?.caption)||`${item?.title||'Weekly Bible Encouragement'}\n\n${item?.reflection||''}`.trim()).replace(/(?:^|\s)#[\p{L}\p{N}_-]+/gu,'').replace(/\n{3,}/g,'\n\n').trim();
   if(!main.toLowerCase().startsWith(hook.toLowerCase()))main=`${hook}\n\n${main}`;
   if(!/[?？]\s*$/.test(main))main=`${main}\n\n${question}`;
+  if(!main.toLowerCase().includes(share.toLowerCase()))main=`${main}\n\n${share}`;
   return main.trim();
 }
 async function copy(value,label){
