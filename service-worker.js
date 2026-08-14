@@ -1,5 +1,5 @@
 /* De Mayo Bible Studies | Project Phoenix performance cache */
-const VERSION='1.27.28-dev-animated-voice-reels';
+const VERSION='1.27.29-dev-voice-teleprompter';
 const SHELL_CACHE=`de-mayo-shell-${VERSION}`;
 const RUNTIME_CACHE=`de-mayo-runtime-${VERSION}`;
 const OFFLINE_URL='./index.html';
