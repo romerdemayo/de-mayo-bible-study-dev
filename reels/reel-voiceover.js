@@ -3,7 +3,7 @@
 'use strict';
 const $=s=>document.querySelector(s);
 const MAX_RECORDING_SECONDS=90,MAX_SCRIPT_WORDS=150;
-let recorder=null,stream=null,chunks=[],startedAt=0,timer=null,previewUrl='',scrollFrame=0,scrollLast=0,scrollDelayUntil=0,scrollPaused=false;
+let recorder=null,stream=null,chunks=[],startedAt=0,timer=null,previewUrl='',scrollFrame=0,scrollLast=0,scrollDelayUntil=0,scrollPaused=false,scrollPosition=0;
 window.DM_REEL_VOICEOVER_BLOB=null;
 window.DM_REEL_VOICEOVER_DURATION=0;
 function status(message,type='info'){const box=$('#dmVoiceoverStatus');if(box){box.hidden=false;box.dataset.type=type;box.textContent=message}window.toast?.(message)}
@@ -29,12 +29,12 @@ function scrollPrompter(time){
  const area=$('#dmVoiceoverScript');if(!area||!recorder||recorder.state==='inactive'){stopPrompter();return}
  if(!scrollPaused&&time>=scrollDelayUntil){
   if(!scrollLast)scrollLast=time;
-  const max=Math.max(0,area.scrollHeight-area.clientHeight);area.scrollTop=Math.min(max,area.scrollTop+scrollSpeed()*(time-scrollLast)/1000);
+  const max=Math.max(0,area.scrollHeight-area.clientHeight);scrollPosition=Math.min(max,scrollPosition+scrollSpeed()*(time-scrollLast)/1000);area.scrollTop=Math.round(scrollPosition);
  }else scrollLast=time;
  scrollLast=time;scrollFrame=requestAnimationFrame(scrollPrompter);
 }
-function startPrompter(){const area=$('#dmVoiceoverScript');if(!area)return;stopPrompter();area.scrollTop=0;scrollPaused=false;scrollDelayUntil=performance.now()+1800;updatePrompterButton();scrollFrame=requestAnimationFrame(scrollPrompter)}
-function togglePrompter(){scrollPaused=!scrollPaused;scrollLast=0;updatePrompterButton()}
+function startPrompter(){const area=$('#dmVoiceoverScript');if(!area)return;stopPrompter();area.scrollTop=0;scrollPosition=0;scrollPaused=false;scrollDelayUntil=performance.now()+1200;updatePrompterButton();scrollFrame=requestAnimationFrame(scrollPrompter)}
+function togglePrompter(){const resuming=scrollPaused;scrollPaused=!scrollPaused;if(resuming)scrollPosition=$('#dmVoiceoverScript')?.scrollTop||scrollPosition;scrollLast=0;updatePrompterButton()}
 function setPrompterFont(){const area=$('#dmVoiceoverScript');const value=Number($('#dmVoiceoverFont')?.value||24);if(area)area.style.fontSize=`${value}px`;const output=$('#dmVoiceoverFontValue');if(output)output.textContent=`${value}px`}
 function setSpeedLabel(){const output=$('#dmVoiceoverSpeedValue');if(output)output.textContent=`${scrollSpeed()} px/sec`}
 function supportedType(){return['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(type=>MediaRecorder.isTypeSupported(type))||''}
