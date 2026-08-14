@@ -13,6 +13,8 @@ const QUESTIONS={English:['What are you trusting God for today?','Which part of 
 function read(key){try{const value=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(value)?value:[]}catch{return[]}}
 function write(key,value){localStorage.setItem(key,JSON.stringify(value.slice(0,120)))}
 function clean(value){return String(value||'').trim()}
+function contentType(){return $('#dmReelContentType')?.value||'devotional'}
+function contentTypeLabel(){return contentType()==='motivation'?'Christian Motivational':'Verse, Message & Prayer'}
 function removeJoinThanks(value){return clean(value).replace(/(?:thank you|thanks)\s+for\s+joining\s+(?:us\s+at\s+)?de\s+mayo\s+bible\s+studies(?:\s+today)?[.!]?/gi,'').replace(/\n{3,}/g,'\n\n').trim()}
 function signature(item){return clean(item?.reference).toLowerCase().replace(/[^a-z0-9]+/g,'-')}
 function history(){
@@ -29,10 +31,10 @@ function status(message,type='info'){
 }
 function normalize(data,language){
   const g=data?.generated||data?.result||data?.content||data?.data||data||{};
-  const selectedTheme=clean($('#dmTheme')?.selectedOptions?.[0]?.textContent||'Weekly');
+  const selectedTheme=clean($('#dmTheme')?.selectedOptions?.[0]?.textContent||'Weekly'),type=contentType();
   return {
-    title:removeJoinThanks(g.title)||`${selectedTheme} for Today`,
-    label:'Weekly',reference:clean(g.reference||g.verseReference),verse:clean(g.verse||g.body||g.scripture),
+    title:removeJoinThanks(g.title)||(type==='motivation'?`${selectedTheme} Christian Motivation`:`${selectedTheme} for Today`),
+    label:type==='motivation'?'Motivation':'Weekly',contentType:type,reference:clean(g.reference||g.verseReference),verse:clean(g.verse||g.body||g.scripture),
     reflection:clean(g.reflection),prayer:clean(g.prayer),caption:removeJoinThanks(g.caption),
     hashtags:Array.isArray(g.hashtags)?g.hashtags.join(' '):clean(g.hashtags),language,source:'Gemini'
   };
@@ -50,6 +52,9 @@ function migrateJoinThanks(){
 function themePrompt(){
   const theme=clean($('#dmTheme')?.selectedOptions?.[0]?.textContent||'Hope');
   const language=$('#dmReelLanguage')?.value||'English';
+  if(contentType()==='motivation')return language==='Tagalog'
+    ? `${theme}. Gumawa ng makapangyarihan ngunit mahinahong Christian motivational Reel sa natural na Tagalog. Magsimula sa isang maikling motivational hook. Gumamit ng isang buong Bible verse at tamang reference bilang pundasyon. Sumulat ng nakapagpapalakas na mensahe na may praktikal na hamon o susunod na hakbang, hanggang 55 salita lamang, at isang taos-pusong panalangin hanggang 40 salita. Ang verse, mensahe at panalangin ay dapat kasya sa mahinahong 90-second reading. Iwasan ang garantisadong pangako tungkol sa kayamanan, tagumpay o kagalingan. Ang caption ay dapat walang URL, magtapos sa isang tanong, at magkaroon lamang ng 3 hanggang 5 kaugnay na hashtags.`
+    : `${theme}. Create a strong but compassionate Christian motivational Reel. Begin with a short motivational hook. Use one complete Bible verse and its correct reference as the foundation. Write an uplifting message with one practical challenge or next step, maximum 55 words, followed by a sincere prayer of maximum 40 words. The verse, message and prayer must fit a calm 90-second reading. Avoid guaranteed promises of wealth, success or healing. Use a link-free caption ending with one sincere question and return only 3 to 5 relevant hashtags.`;
   return language==='Tagalog'
     ? `${theme}. Write the verse, reflection, prayer, caption and closing message in natural Tagalog. The spoken verse, reflection and prayer together must fit a calm 90-second reading: keep the reflection to 55 words maximum and the prayer to 40 words maximum. Keep the full Bible verse and its reference. Begin the caption with a short emotional hook, end with one sincere discussion question, use no URL, and return only 3 to 5 relevant hashtags.`
     : `${theme}. Write clear, warm English suitable for a weekly Facebook Reel. The spoken verse, reflection and prayer together must fit a calm 90-second reading: keep the reflection to 55 words maximum and the prayer to 40 words maximum. Keep the full Bible verse and its reference. Begin the caption with a short emotional hook, end with one sincere discussion question, use no URL, and return only 3 to 5 relevant hashtags.`;
@@ -71,8 +76,8 @@ async function generate(mode='selected'){
   const activeButton=mode==='surprise'?$('#dmReelSurprise'):$('#dmRegenerate');
   if(activeButton)activeButton.textContent='✨ Gemini creating…';
   const language=$('#dmReelLanguage')?.value||'English';
-  const selectedTheme=clean($('#dmTheme')?.selectedOptions?.[0]?.textContent||'Hope');
-  status(`✨ Gemini is creating a fresh ${selectedTheme} Reel…`,'loading');
+   const selectedTheme=clean($('#dmTheme')?.selectedOptions?.[0]?.textContent||'Hope'),selectedType=contentTypeLabel();
+   status(`✨ Gemini is creating a fresh ${selectedType} Reel about ${selectedTheme}…`,'loading');
   try{
     let item=null;
     for(let attempt=0;attempt<3;attempt++){
@@ -87,7 +92,7 @@ async function generate(mode='selected'){
     window.DM_REEL_CREATOR.setGeneratedContent(item);
     rememberGenerated(item);
     updatePostedStatus();
-    status(`✅ Fresh ${selectedTheme} Reel created in ${language} — not posted yet.`,'success');
+     status(`✅ Fresh ${selectedType} Reel created in ${language} — not posted yet.`,'success');
   }catch(error){
     console.error('Reel Gemini:',error);
     status(`⚠️ ${error.message} Built-in Reel content is still available.`,'error');
@@ -116,7 +121,7 @@ function updatePostedStatus(){
   if(count)count.textContent=`${read(POSTED_KEY).length} posted Reel${read(POSTED_KEY).length===1?'':'s'} protected from repeats`;
 }
 function hashtagsText(item){
-  const raw=clean(item?.hashtags)||'#BibleVerse #ChristianEncouragement #Faith #DeMayoBibleStudies';
+  const raw=clean(item?.hashtags)||(item?.contentType==='motivation'?'#ChristianMotivation #FaithMotivation #BibleEncouragement #DeMayoBibleStudies':'#BibleVerse #ChristianEncouragement #Faith #DeMayoBibleStudies');
   const tags=[...new Set(raw.split(/[\s,]+/).filter(Boolean).map(tag=>tag.startsWith('#')?tag:'#'+tag))].slice(0,5);
   if(!tags.some(tag=>tag.toLowerCase()==='#demayobiblestudies')){if(tags.length===5)tags[4]='#DeMayoBibleStudies';else tags.push('#DeMayoBibleStudies');}
   return tags.join(' ');
@@ -157,7 +162,7 @@ function install(){
   if(controls&&!$('#dmReelGeminiControls')){
     const panel=document.createElement('div');
     panel.id='dmReelGeminiControls';panel.className='notice';
-    panel.innerHTML='<b>✨ Gemini weekly content</b><label>Language<select id="dmReelLanguage"><option>English</option><option>Tagalog</option></select></label><p class="small-note">New Gemini Reels check created, saved and posted history before being accepted.</p>';
+    panel.innerHTML='<b>✨ Gemini weekly content</b><label>Content type<select id="dmReelContentType"><option value="devotional">Verse, Message &amp; Prayer</option><option value="motivation">Christian Motivational</option></select></label><label>Language<select id="dmReelLanguage"><option>English</option><option>Tagalog</option></select></label><p class="small-note">Christian Motivational creates a Bible-grounded hook, practical encouragement and short prayer. New Reels check created, saved and posted history before being accepted.</p>';
     controls.insertAdjacentElement('afterbegin',panel);
   }
   const newIdea=$('#dmRegenerate');
@@ -167,6 +172,8 @@ function install(){
   }
   const theme=$('#dmTheme');
   if(theme&&!theme.dataset.geminiReset){theme.dataset.geminiReset='true';theme.addEventListener('change',()=>window.DM_REEL_CREATOR?.clearGeneratedContent());}
+  const type=$('#dmReelContentType');
+  if(type&&!type.dataset.geminiReset){type.dataset.geminiReset='true';type.addEventListener('change',()=>{window.DM_REEL_CREATOR?.clearGeneratedContent();status(`${contentTypeLabel()} selected. Choose a theme, then tap Generate Selected Theme.`,'info')});}
   document.querySelectorAll('[data-dm-type]').forEach(button=>{if(!button.dataset.geminiReset){button.dataset.geminiReset='true';button.addEventListener('click',()=>window.DM_REEL_CREATOR?.clearGeneratedContent());}});
   const actions=$('.dm-reel-actions');
   if(actions&&!$('#dmMarkReelPosted')){
