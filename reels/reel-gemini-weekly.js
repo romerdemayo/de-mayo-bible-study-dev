@@ -27,7 +27,16 @@ function previousItems(){return history().slice(0,50).map(item=>`${item.referenc
 function status(message,type='info'){
   const box=$('#dmReelGeminiStatus');
   if(box){box.hidden=false;box.dataset.type=type;box.textContent=message;}
-  window.toast?.(message);
+  const toastMessage=message.length>120?(type==='error'?'Gemini is temporarily busy. Please try again.':'Reel content updated.'):message;
+  window.toast?.(toastMessage);
+}
+const wait=milliseconds=>new Promise(resolve=>setTimeout(resolve,milliseconds));
+function localMotivation(language){
+  const base=window.DM_REEL_CREATOR?.getContent?.()||{},theme=clean($('#dmTheme')?.value||'hope'),label=clean($('#dmTheme')?.selectedOptions?.[0]?.textContent||'Hope');
+  const english={hope:'Do not let today’s uncertainty decide tomorrow’s courage. God is present, so take the next faithful step even when you cannot see the whole path.',faith:'Faith does not require every answer before you move. Trust God with what you cannot control, then act faithfully with what He has placed in your hands today.',peace:'You do not have to carry every burden at once. Pause, pray, and place today in Christ’s hands. Let His peace guide your next decision.',strength:'Your strength is not measured by never feeling tired. Keep leaning on Christ, take one faithful step, and allow His grace to sustain you today.',gratitude:'Gratitude changes what difficulty cannot. Notice one evidence of God’s goodness today, thank Him for it, and let that truth strengthen your heart.',courage:'Courage is choosing faithful obedience while fear is still speaking. God goes with you, so take the next right step and trust Him with the outcome.'};
+  const tagalog={hope:'Huwag hayaang ang kawalan ng katiyakan ngayon ang magpasya sa iyong tapang bukas. Kasama mo ang Diyos, kaya gawin ang susunod na tapat na hakbang kahit hindi mo pa nakikita ang buong landas.',faith:'Hindi kailangan ng pananampalataya ang lahat ng sagot bago ka kumilos. Ipagkatiwala sa Diyos ang hindi mo makontrol at gawin nang tapat ang ipinagkaloob Niya sa iyo ngayon.',peace:'Hindi mo kailangang dalhin ang lahat ng pasanin nang sabay-sabay. Huminto, manalangin, at ilagay ang araw na ito sa kamay ni Cristo. Hayaan mong gabayan ka ng Kanyang kapayapaan.',strength:'Ang iyong lakas ay hindi nasusukat sa hindi pagkakaroon ng pagod. Patuloy na umasa kay Cristo, gumawa ng isang tapat na hakbang, at hayaang palakasin ka ng Kanyang biyaya.',gratitude:'Binabago ng pasasalamat ang hindi kayang baguhin ng problema. Pansinin ang isang patunay ng kabutihan ng Diyos ngayon, magpasalamat, at hayaang palakasin nito ang iyong puso.',courage:'Ang tapang ay ang pagpili ng tapat na pagsunod kahit nagsasalita pa ang takot. Kasama mo ang Diyos, kaya gawin ang susunod na tamang hakbang at ipagkatiwala sa Kanya ang resulta.'};
+  const isTagalog=language==='Tagalog',reflection=(isTagalog?tagalog:english)[theme]||(isTagalog?tagalog.hope:english.hope);
+  return {...base,title:`${label} Christian Motivation`,label:'Motivation',contentType:'motivation',reflection,caption:isTagalog?`${label}: Hindi ka nag-iisa. Kumapit sa Salita ng Diyos at gawin ang susunod na tapat na hakbang. Ano ang hakbang na gagawin mo ngayon?`:`${label}: You are not walking alone. Hold on to God’s Word and take the next faithful step. What step will you take today?`,hashtags:'#ChristianMotivation #FaithMotivation #BibleEncouragement #DeMayoBibleStudies',language,source:'Built-in fallback'};
 }
 function normalize(data,language){
   const g=data?.generated||data?.result||data?.content||data?.data||data||{};
@@ -81,12 +90,17 @@ async function generate(mode='selected'){
   try{
     let item=null;
     for(let attempt=0;attempt<3;attempt++){
-      const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'bibleVerse',theme:themePrompt(),previousItems:previousItems()})});
-      const data=await response.json();
-      if(!response.ok||data?.ok===false)throw new Error(data?.error||data?.message||`Gemini request failed (${response.status})`);
-      const candidate=normalize(data,language);
-      if(!candidate.reference||!candidate.verse)throw new Error('Gemini returned incomplete Reel content.');
-      if(!history().some(old=>signature(old)===signature(candidate))){item=candidate;break;}
+      try{
+        const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'bibleVerse',theme:themePrompt(),previousItems:previousItems()})});
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok||data?.ok===false){const error=new Error(data?.error||data?.message||`Gemini request failed (${response.status})`);error.temporary=response.status===429||response.status===503||/high demand|temporar|overload/i.test(error.message);throw error;}
+        const candidate=normalize(data,language);
+        if(!candidate.reference||!candidate.verse)throw new Error('Gemini returned incomplete Reel content.');
+        if(!history().some(old=>signature(old)===signature(candidate))){item=candidate;break;}
+      }catch(error){
+        if(error.temporary&&attempt<2){const box=$('#dmReelGeminiStatus');if(box){box.hidden=false;box.dataset.type='loading';box.textContent=`Gemini is busy. Retrying automatically (${attempt+2} of 3)…`;}await wait(1500*(attempt+1));continue;}
+        throw error;
+      }
     }
     if(!item)throw new Error('Gemini repeated a recent verse three times. Please try again.');
     window.DM_REEL_CREATOR.setGeneratedContent(item);
@@ -95,7 +109,9 @@ async function generate(mode='selected'){
      status(`✅ Fresh ${selectedType} Reel created in ${language} — not posted yet.`,'success');
   }catch(error){
     console.error('Reel Gemini:',error);
-    status(`⚠️ ${error.message} Built-in Reel content is still available.`,'error');
+    if(contentType()==='motivation'){
+      const fallback=localMotivation(language);window.DM_REEL_CREATOR.setGeneratedContent(fallback);rememberGenerated(fallback);updatePostedStatus();status(`✅ Gemini is temporarily busy, so a built-in ${contentTypeLabel()} Reel was created instead.`,'success');
+    }else status(`⚠️ ${error.message} Built-in Reel content is still available.`,'error');
   }finally{
     busy=false;
     buttons.forEach(button=>button.disabled=false);
