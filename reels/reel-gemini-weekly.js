@@ -51,8 +51,8 @@ function themePrompt(){
   const theme=clean($('#dmTheme')?.selectedOptions?.[0]?.textContent||'Hope');
   const language=$('#dmReelLanguage')?.value||'English';
   return language==='Tagalog'
-    ? `${theme}. Write the verse, reflection, prayer, caption and closing message in natural Tagalog. Keep the Bible reference in its standard form. Begin the caption with a short emotional hook, end with one sincere discussion question, use no URL, and return only 3 to 5 relevant hashtags.`
-    : `${theme}. Write clear, warm English suitable for a weekly Facebook Reel. Begin the caption with a short emotional hook, end with one sincere discussion question, use no URL, and return only 3 to 5 relevant hashtags.`;
+    ? `${theme}. Write the verse, reflection, prayer, caption and closing message in natural Tagalog. The spoken verse, reflection and prayer together must fit a calm 90-second reading: keep the reflection to 55 words maximum and the prayer to 40 words maximum. Keep the full Bible verse and its reference. Begin the caption with a short emotional hook, end with one sincere discussion question, use no URL, and return only 3 to 5 relevant hashtags.`
+    : `${theme}. Write clear, warm English suitable for a weekly Facebook Reel. The spoken verse, reflection and prayer together must fit a calm 90-second reading: keep the reflection to 55 words maximum and the prayer to 40 words maximum. Keep the full Bible verse and its reference. Begin the caption with a short emotional hook, end with one sincere discussion question, use no URL, and return only 3 to 5 relevant hashtags.`;
 }
 function chooseSurpriseTheme(){
   const select=$('#dmTheme');
