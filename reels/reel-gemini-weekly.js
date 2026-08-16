@@ -6,7 +6,7 @@ const GENERATED_KEY='dm_reel_gemini_history_v1';
 const POSTED_KEY='dm_reel_posted_history_v1';
 const MAIN_APP_URL='https://romerdemayo.github.io/de-mayo-bible-study/';
 const $=s=>document.querySelector(s);
-let busy=false;
+let busy=false,currentFreshSignature='';
 const HOOKS={English:['God has not forgotten you.','Pause—this may be the reminder you need today.','Read this if your heart needs encouragement.','Take this truth with you today.'],Tagalog:['Hindi ka nakakalimutan ng Diyos.','Sandali—maaaring ito ang paalala na kailangan mo ngayon.','Basahin ito kung kailangan ng puso mo ng lakas.','Dalhin mo ang katotohanang ito ngayong araw.']};
 const QUESTIONS={English:['What are you trusting God for today?','Which part of this message speaks to you?','Who might need this encouragement today?','How has God been faithful to you?'],Tagalog:['Ano ang ipinagkakatiwala mo sa Diyos ngayon?','Aling bahagi ng mensaheng ito ang nangusap sa iyo?','Sino ang maaaring mangailangan ng paalalang ito?','Paano naging tapat ang Diyos sa iyo?']};
 
@@ -74,7 +74,7 @@ function chooseSurpriseTheme(){
   const options=[...select.options];
   const choices=options.filter(option=>option.value!==select.value);
   const selected=choices[Math.floor(Math.random()*choices.length)]||options[0];
-  if(selected){select.value=selected.value;window.DM_REEL_CREATOR?.clearGeneratedContent();}
+  if(selected){currentFreshSignature='';select.value=selected.value;window.DM_REEL_CREATOR?.clearGeneratedContent();}
 }
 async function generate(mode='selected'){
   if(busy||!window.DM_REEL_CREATOR)return;
@@ -103,6 +103,7 @@ async function generate(mode='selected'){
       }
     }
     if(!item)throw new Error('Gemini repeated a recent verse three times. Please try again.');
+    currentFreshSignature=signature(item);
     window.DM_REEL_CREATOR.setGeneratedContent(item);
     rememberGenerated(item);
     updatePostedStatus();
@@ -110,7 +111,7 @@ async function generate(mode='selected'){
   }catch(error){
     console.error('Reel Gemini:',error);
     if(contentType()==='motivation'){
-      const fallback=localMotivation(language);window.DM_REEL_CREATOR.setGeneratedContent(fallback);rememberGenerated(fallback);updatePostedStatus();status(`✅ Gemini is temporarily busy, so a built-in ${contentTypeLabel()} Reel was created instead.`,'success');
+      const fallback=localMotivation(language);currentFreshSignature=signature(fallback);window.DM_REEL_CREATOR.setGeneratedContent(fallback);rememberGenerated(fallback);updatePostedStatus();status(`✅ Gemini is temporarily busy, so a built-in ${contentTypeLabel()} Reel was created instead.`,'success');
     }else status(`⚠️ ${error.message} Built-in Reel content is still available.`,'error');
   }finally{
     busy=false;
@@ -123,14 +124,16 @@ function markPosted(){
   const item=window.DM_REEL_CREATOR?.getContent();
   if(!item?.reference)return status('Create or open a Reel before marking it as posted.','error');
   const posted=read(POSTED_KEY);
-  if(posted.some(old=>signature(old)===signature(item)))return status(`${item.reference} is already marked as posted.`,'info');
+  if(posted.some(old=>signature(old)===signature(item))){currentFreshSignature='';updatePostedStatus();return status(`${item.reference} is already marked as posted.`,'info');}
   write(POSTED_KEY,[{...item,postedAt:new Date().toISOString()},...posted]);
+  currentFreshSignature='';
   updatePostedStatus();
   status(`✅ ${item.reference} marked as posted. Gemini will avoid it in future Reels.`,'success');
 }
 function updatePostedStatus(){
   const item=window.DM_REEL_CREATOR?.getContent();
-  const isPosted=item&&read(POSTED_KEY).some(old=>signature(old)===signature(item));
+  const itemSignature=signature(item);
+  const isPosted=item&&itemSignature!==currentFreshSignature&&read(POSTED_KEY).some(old=>signature(old)===itemSignature);
   const button=$('#dmMarkReelPosted');
   if(button){button.textContent=isPosted?'✓ Already Posted':'✓ Mark as Posted';button.disabled=!!isPosted;}
   const count=$('#dmPostedReelCount');
@@ -187,10 +190,10 @@ function install(){
     const surprise=document.createElement('button');surprise.id='dmReelSurprise';surprise.className='ghost';surprise.textContent='🎲 Surprise Me';surprise.onclick=()=>generate('surprise');newIdea.insertAdjacentElement('afterend',surprise);
   }
   const theme=$('#dmTheme');
-  if(theme&&!theme.dataset.geminiReset){theme.dataset.geminiReset='true';theme.addEventListener('change',()=>window.DM_REEL_CREATOR?.clearGeneratedContent());}
+  if(theme&&!theme.dataset.geminiReset){theme.dataset.geminiReset='true';theme.addEventListener('change',()=>{currentFreshSignature='';window.DM_REEL_CREATOR?.clearGeneratedContent();});}
   const type=$('#dmReelContentType');
-  if(type&&!type.dataset.geminiReset){type.dataset.geminiReset='true';type.addEventListener('change',()=>{window.DM_REEL_CREATOR?.clearGeneratedContent();status(`${contentTypeLabel()} selected. Choose a theme, then tap Generate Selected Theme.`,'info')});}
-  document.querySelectorAll('[data-dm-type]').forEach(button=>{if(!button.dataset.geminiReset){button.dataset.geminiReset='true';button.addEventListener('click',()=>window.DM_REEL_CREATOR?.clearGeneratedContent());}});
+  if(type&&!type.dataset.geminiReset){type.dataset.geminiReset='true';type.addEventListener('change',()=>{currentFreshSignature='';window.DM_REEL_CREATOR?.clearGeneratedContent();status(`${contentTypeLabel()} selected. Choose a theme, then tap Generate Selected Theme.`,'info')});}
+  document.querySelectorAll('[data-dm-type]').forEach(button=>{if(!button.dataset.geminiReset){button.dataset.geminiReset='true';button.addEventListener('click',()=>{currentFreshSignature='';window.DM_REEL_CREATOR?.clearGeneratedContent();});}});
   const actions=$('.dm-reel-actions');
   if(actions&&!$('#dmMarkReelPosted')){
     const button=document.createElement('button');button.id='dmMarkReelPosted';button.textContent='✓ Mark as Posted';button.onclick=markPosted;actions.appendChild(button);
