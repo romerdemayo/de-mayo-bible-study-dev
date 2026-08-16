@@ -140,10 +140,12 @@ function updatePostedStatus(){
   if(count)count.textContent=`${read(POSTED_KEY).length} posted Reel${read(POSTED_KEY).length===1?'':'s'} protected from repeats`;
 }
 function hashtagsText(item){
-  const raw=clean(item?.hashtags)||(item?.contentType==='motivation'?'#ChristianMotivation #FaithMotivation #BibleEncouragement #DeMayoBibleStudies':'#BibleVerse #ChristianEncouragement #Faith #DeMayoBibleStudies');
-  const tags=[...new Set(raw.split(/[\s,]+/).filter(Boolean).map(tag=>tag.startsWith('#')?tag:'#'+tag))].slice(0,5);
-  if(!tags.some(tag=>tag.toLowerCase()==='#demayobiblestudies')){if(tags.length===5)tags[4]='#DeMayoBibleStudies';else tags.push('#DeMayoBibleStudies');}
-  return tags.join(' ');
+  const theme=clean($('#dmTheme')?.value||'hope').toLowerCase();
+  const themeTags={hope:'#HopeInGod',faith:'#WalkByFaith',peace:'#PeaceInChrist',strength:'#GodIsMyStrength',gratitude:'#ThankfulToGod',courage:'#CourageInChrist'};
+  const isMotivation=item?.contentType==='motivation'||contentType()==='motivation';
+  const isPrayer=!isMotivation&&/prayer|panalangin/i.test(`${item?.title||''} ${item?.label||''}`);
+  const topic=isMotivation?'#ChristianMotivation':isPrayer?'#Prayer':themeTags[theme]||'#FaithInGod';
+  return ['#ChristianReels','#BibleVerse',topic,'#ChristianEncouragement','#DeMayoBibleStudies'].join(' ');
 }
 function removeCaptionLinks(value){
   return String(value||'')
