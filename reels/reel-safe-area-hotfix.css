@@ -1,0 +1,53 @@
+/* De Mayo Bible Studies — Reel safe-area hotfix
+   Keeps long prayer/message text away from Facebook/Instagram controls and branding. */
+.dm-reel-canvas .dm-reel-safe{
+  inset:14% 18% 31% 8% !important;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:10px !important;
+  min-height:0;
+  overflow:hidden;
+  padding:2% 0;
+}
+.dm-reel-canvas .dm-reel-kicker{
+  flex:0 0 auto;
+  margin:0 0 3px;
+  line-height:1.15;
+}
+.dm-reel-canvas .dm-reel-message{
+  flex:0 1 auto;
+  max-height:72%;
+  overflow:hidden;
+  line-height:1.16 !important;
+  text-wrap:balance;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+.dm-reel-canvas .dm-text-medium{font-size:clamp(1.05rem,3.8vw,1.75rem) !important}
+.dm-reel-canvas .dm-text-long{font-size:clamp(.92rem,3.25vw,1.42rem) !important;line-height:1.14 !important}
+.dm-reel-canvas .dm-text-xl{font-size:clamp(.80rem,2.8vw,1.20rem) !important;line-height:1.12 !important}
+.dm-reel-canvas .dm-reel-reference{
+  flex:0 0 auto;
+  margin-top:2px;
+  line-height:1.15;
+}
+.dm-reel-canvas .dm-reel-brand{
+  left:8% !important;
+  right:18% !important;
+  bottom:16% !important;
+}
+.dm-reel-canvas .dm-reel-progress{
+  left:8% !important;
+  right:18% !important;
+  bottom:12.5% !important;
+}
+/* Weekly mode: allow a little more room while keeping the platform safe zone. */
+.dm-reel-canvas.dm-weekly-scene .dm-reel-safe{inset:13% 18% 29% 8% !important}
+.dm-reel-canvas.dm-weekly-scene .dm-reel-message{max-height:76%}
+@media(max-width:520px){
+  .dm-reel-canvas .dm-reel-safe{inset:13% 19% 31% 7% !important;gap:8px !important}
+  .dm-reel-canvas .dm-text-medium{font-size:clamp(1rem,5.2vw,1.5rem) !important}
+  .dm-reel-canvas .dm-text-long{font-size:clamp(.86rem,4.4vw,1.22rem) !important}
+  .dm-reel-canvas .dm-text-xl{font-size:clamp(.75rem,3.9vw,1.08rem) !important}
+}
