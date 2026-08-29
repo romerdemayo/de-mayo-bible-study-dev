@@ -8,6 +8,14 @@ if(typeof renderV2!=='function'){
 }
 window.bibleReelCreatorV2=renderV2;
 
+function mountCopyTools(){
+  try{
+    window.DM_REEL_COPY_TOOLS?.render?.();
+    setTimeout(()=>window.DM_REEL_COPY_TOOLS?.render?.(),120);
+    setTimeout(()=>window.DM_REEL_COPY_TOOLS?.render?.(),500);
+  }catch(error){console.warn('Unable to mount Reel copy tools',error);}
+}
+
 function openV2(event){
   if(event){
     event.preventDefault();
@@ -23,6 +31,7 @@ function openV2(event){
     const menu=document.querySelector('#menu');
     if(sidebar)sidebar.classList.remove('open');
     if(menu)menu.setAttribute('aria-expanded','false');
+    mountCopyTools();
   }catch(error){
     console.error('Unable to open Bible Reel Creator V2',error);
     const view=document.querySelector('#view');
