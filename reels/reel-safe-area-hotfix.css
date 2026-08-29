@@ -1,35 +1,48 @@
-/* De Mayo Bible Studies — Reel safe-area hotfix
-   Keeps long prayer/message text away from Facebook/Instagram controls and branding. */
+/* De Mayo Bible Studies — Reel safe-area hotfix v2
+   Separates the scene heading from long prayer/message text and keeps content
+   away from Facebook/Instagram controls and branding. */
 .dm-reel-canvas .dm-reel-safe{
   inset:14% 18% 31% 8% !important;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  gap:10px !important;
+  display:grid !important;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  align-content:stretch;
+  justify-content:stretch !important;
+  gap:14px !important;
   min-height:0;
   overflow:hidden;
-  padding:2% 0;
+  padding:1% 0;
 }
 .dm-reel-canvas .dm-reel-kicker{
-  flex:0 0 auto;
-  margin:0 0 3px;
+  position:relative;
+  z-index:3;
+  display:block;
+  margin:0 !important;
+  padding:0 0 6px;
   line-height:1.15;
+  min-height:1.2em;
+  background:transparent;
 }
 .dm-reel-canvas .dm-reel-message{
-  flex:0 1 auto;
-  max-height:72%;
+  position:relative;
+  z-index:2;
+  align-self:center;
+  justify-self:stretch;
+  max-height:100% !important;
+  min-height:0;
   overflow:hidden;
-  line-height:1.16 !important;
+  line-height:1.15 !important;
   text-wrap:balance;
   overflow-wrap:anywhere;
   word-break:normal;
 }
-.dm-reel-canvas .dm-text-medium{font-size:clamp(1.05rem,3.8vw,1.75rem) !important}
-.dm-reel-canvas .dm-text-long{font-size:clamp(.92rem,3.25vw,1.42rem) !important;line-height:1.14 !important}
-.dm-reel-canvas .dm-text-xl{font-size:clamp(.80rem,2.8vw,1.20rem) !important;line-height:1.12 !important}
+.dm-reel-canvas .dm-text-medium{font-size:clamp(1.02rem,3.7vw,1.68rem) !important}
+.dm-reel-canvas .dm-text-long{font-size:clamp(.88rem,3.05vw,1.34rem) !important;line-height:1.13 !important}
+.dm-reel-canvas .dm-text-xl{font-size:clamp(.74rem,2.55vw,1.10rem) !important;line-height:1.10 !important}
 .dm-reel-canvas .dm-reel-reference{
-  flex:0 0 auto;
-  margin-top:2px;
+  position:relative;
+  z-index:3;
+  margin:0 !important;
+  padding-top:4px;
   line-height:1.15;
 }
 .dm-reel-canvas .dm-reel-brand{
@@ -42,12 +55,14 @@
   right:18% !important;
   bottom:12.5% !important;
 }
-/* Weekly mode: allow a little more room while keeping the platform safe zone. */
 .dm-reel-canvas.dm-weekly-scene .dm-reel-safe{inset:13% 18% 29% 8% !important}
-.dm-reel-canvas.dm-weekly-scene .dm-reel-message{max-height:76%}
 @media(max-width:520px){
-  .dm-reel-canvas .dm-reel-safe{inset:13% 19% 31% 7% !important;gap:8px !important}
-  .dm-reel-canvas .dm-text-medium{font-size:clamp(1rem,5.2vw,1.5rem) !important}
-  .dm-reel-canvas .dm-text-long{font-size:clamp(.86rem,4.4vw,1.22rem) !important}
-  .dm-reel-canvas .dm-text-xl{font-size:clamp(.75rem,3.9vw,1.08rem) !important}
+  .dm-reel-canvas .dm-reel-safe{
+    inset:12.5% 19% 31% 7% !important;
+    gap:11px !important;
+  }
+  .dm-reel-canvas .dm-reel-kicker{padding-bottom:5px}
+  .dm-reel-canvas .dm-text-medium{font-size:clamp(.96rem,5vw,1.42rem) !important}
+  .dm-reel-canvas .dm-text-long{font-size:clamp(.80rem,4.15vw,1.14rem) !important}
+  .dm-reel-canvas .dm-text-xl{font-size:clamp(.69rem,3.55vw,.98rem) !important;line-height:1.09 !important}
 }
