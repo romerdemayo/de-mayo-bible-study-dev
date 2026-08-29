@@ -1,14 +1,18 @@
 /* De Mayo Bible Studies | Project Phoenix performance cache */
-const VERSION='1.27.40-dev-focused-reel-hashtags';
+const VERSION='1.27.49-dev-reel-tools-refresh';
 const SHELL_CACHE=`de-mayo-shell-${VERSION}`;
 const RUNTIME_CACHE=`de-mayo-runtime-${VERSION}`;
 const OFFLINE_URL='./index.html';
 const SHELL=[
  './','./index.html','./styles.css','./app.js','./analytics-config.js','./analytics-loader.js','./social-studio-gemini.js','./social-studio-engine-v2.js','./social-studio-share-confirmation.js','./social-studio-branding.js','./social-studio-designer.js','./social-studio-premium-cleanup.js','./social-studio-layout-coordinator.js','./social-studio-premium-behaviour.js','./social-studio-premium-content-polish.js','./social-publishing-workflow.js','./social-studio-facebook-publish.js','./social-publishing-calendar.js','./social-studio-share-sync.js','./social-reel-handoff.js','./social-studio-desktop-workspace.css','./sprint1-library.css','./sprint1-library.js','./library-dashboard-links.js','./sprint1-bible-workspace.css','./sprint1-bible-workspace.js','./unified-ai-creator.css','./unified-ai-creator.js','./ai-generator-intelligence.js','./ai-topic-scripture.js','./ai-scripture-intelligence.css','./ai-scripture-intelligence-fast.js','./ai-language-scripture-integration.js','./ai-editor-scripture-cleanup.js','./ai-writing-assistant.css','./ai-writing-assistant.js','./my-library-resource-actions.js','./resource-output-studio.js','./resource-output-presentation-handout.js','./resource-output-kids-smallgroup.js','./resource-output-library.js',
- './reels/reel-creator-v2.css','./reels/reel-creator-v2.js','./reels/reel-schedule-manager.js','./reels/reel-voiceover.js','./reels/reel-gemini-weekly.js','./reels/reel-entry.js','./reels/mp4-result-panel.js','./reels/desktop-mp4-download-fix.js','./reels/native-mp4-recorder.js','./reels/browser-mp4.js',
+ './reels/reel-creator-v2.css','./reels/reel-safe-area-hotfix.css','./reels/reel-creator-v2.js','./reels/reel-schedule-manager.js','./reels/reel-voiceover.js','./reels/reel-gemini-weekly.js','./reels/reel-quota-fallback.js','./reels/reel-copy-tools.js','./reels/reel-content-length-guard.js','./reels/reel-reflection-safe.js','./reels/weekly-reel-builder.js','./reels/reel-entry.js','./reels/mp4-result-panel.js','./reels/desktop-mp4-download-fix.js','./reels/native-mp4-recorder.js','./reels/browser-mp4.js',
  './manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-192.png','./icon-maskable-512.png','./apple-touch-icon.png','./social-preview.png'
 ];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(SHELL_CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>![SHELL_CACHE,RUNTIME_CACHE].includes(k)).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
+async function networkFirst(request){
+ const cache=await caches.open(RUNTIME_CACHE);
+ try{const fresh=await fetch(request,{cache:'no-store'});if(fresh&&fresh.ok&&fresh.type!=='opaque')cache.put(request,fresh.clone());return fresh;}catch{return (await cache.match(request))||null;}
+}
 async function staleWhileRevalidate(request){const cache=await caches.open(RUNTIME_CACHE),cached=await cache.match(request);const fresh=fetch(request).then(r=>{if(r&&r.ok&&r.type!=='opaque')cache.put(request,r.clone());return r;}).catch(()=>null);return cached||fresh;}
-self.addEventListener('fetch',event=>{const {request}=event;if(request.method!=='GET')return;const url=new URL(request.url);if(url.origin!==self.location.origin)return;if(request.mode==='navigate'){event.respondWith(staleWhileRevalidate(request).then(r=>r||caches.match(OFFLINE_URL)));return;}event.respondWith(staleWhileRevalidate(request).then(r=>r||caches.match(request)));});
+self.addEventListener('fetch',event=>{const {request}=event;if(request.method!=='GET')return;const url=new URL(request.url);if(url.origin!==self.location.origin)return;if(request.mode==='navigate'){event.respondWith(networkFirst(request).then(r=>r||caches.match(OFFLINE_URL)));return;}event.respondWith(staleWhileRevalidate(request).then(r=>r||caches.match(request)));});
