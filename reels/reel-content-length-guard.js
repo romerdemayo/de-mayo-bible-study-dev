@@ -26,6 +26,14 @@ function guard(content){
   }
   return {...content,reflection,prayer,caption};
 }
+function loadReflectionSafety(){
+  if(window.DM_REFLECTION_REEL_SAFE||document.querySelector('script[data-dm-reflection-safe]'))return;
+  const script=document.createElement('script');
+  script.src='reels/reel-reflection-safe.js?v=12745';
+  script.defer=true;
+  script.dataset.dmReflectionSafe='1';
+  document.head.appendChild(script);
+}
 function install(){
   const api=window.DM_REEL_CREATOR;
   if(!api||api.__lengthGuardInstalled||typeof api.setGeneratedContent!=='function')return false;
@@ -33,8 +41,14 @@ function install(){
   api.setGeneratedContent=function(content){return original(guard(content));};
   api.__lengthGuardInstalled=true;
   window.DM_REEL_CONTENT_GUARD={guard,limits:{reflection:MAX_REFLECTION_WORDS,prayer:MAX_PRAYER_WORDS}};
+  loadReflectionSafety();
   return true;
 }
-function boot(){if(install())return;let tries=0;const timer=setInterval(()=>{tries++;if(install()||tries>40)clearInterval(timer);},100);}
+function boot(){
+  loadReflectionSafety();
+  if(install())return;
+  let tries=0;
+  const timer=setInterval(()=>{tries++;if(install()||tries>40)clearInterval(timer);},100);
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
