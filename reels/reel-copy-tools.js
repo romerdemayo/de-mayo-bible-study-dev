@@ -1,11 +1,16 @@
-/* De Mayo Bible Studies — Reel copy actions integrated with main toolbar v5 */
+/* De Mayo Bible Studies — Reel copy actions integrated with main toolbar v6 */
 (function(){
 'use strict';
 const MAIN_APP_URL='https://romerdemayo.github.io/de-mayo-bible-study/';
+const POSTED_KEY='dm_reel_posted_history_v1';
 const $=(s,r=document)=>r.querySelector(s);
 function clean(v=''){return String(v||'').trim();}
 function current(){return window.DM_REEL_CREATOR?.getContent?.()||{};}
 function theme(){return clean($('#dmTheme')?.value||'hope').toLowerCase();}
+function signature(item){return clean(item?.reference).toLowerCase().replace(/[^a-z0-9]+/g,'-');}
+function readPosted(){try{const v=JSON.parse(localStorage.getItem(POSTED_KEY)||'[]');return Array.isArray(v)?v:[]}catch{return[];}}
+function writePosted(items){localStorage.setItem(POSTED_KEY,JSON.stringify(items.slice(0,120)));}
+function isPosted(item=current()){const sig=signature(item);return !!sig&&readPosted().some(x=>signature(x)===sig);}
 function hashtags(item){
  const map={hope:'#HopeInGod',faith:'#WalkByFaith',peace:'#PeaceInChrist',strength:'#GodIsMyStrength',gratitude:'#ThankfulToGod',courage:'#CourageInChrist'};
  const motivation=item?.contentType==='motivation';
@@ -40,7 +45,7 @@ function actionGrid(){
 }
 function addButton(grid,id,label,handler,primary=false){
  let button=$('#'+id);
- if(button&&button.parentElement!==grid)button.remove();
+ if(button&&button.parentElement!==grid)grid.appendChild(button);
  button=$('#'+id);
  if(!button){
   const template=$('#dmCopyScript')||$('#dmSaveProject')||$('#dmPlay')||grid.querySelector('button');
@@ -49,7 +54,31 @@ function addButton(grid,id,label,handler,primary=false){
   if(primary){button.classList.remove('ghost');button.classList.add('primary');}
   grid.appendChild(button);
  }
- button.onclick=handler;
+ if(handler)button.onclick=handler;
+ return button;
+}
+function markPostedFallback(){
+ const item=current();
+ if(!item?.reference){window.toast?.('Create or open a Reel before marking it as posted.');return;}
+ if(isPosted(item)){updatePostedButton();window.toast?.(`${item.reference} is already marked as posted.`);return;}
+ writePosted([{...item,postedAt:new Date().toISOString()},...readPosted().filter(x=>signature(x)!==signature(item))]);
+ updatePostedButton();
+ const count=$('#dmPostedReelCount');if(count)count.textContent=`${readPosted().length} posted Reel${readPosted().length===1?'':'s'} protected from repeats`;
+ window.toast?.(`${item.reference} marked as posted.`);
+}
+function updatePostedButton(){
+ const button=$('#dmMarkReelPosted');if(!button)return;
+ const posted=isPosted();button.textContent=posted?'✓ Already Posted':'✓ Mark as Posted';button.disabled=posted;
+}
+function ensurePostedButton(grid){
+ let button=$('#dmMarkReelPosted');
+ if(button){
+  if(button.parentElement!==grid)grid.appendChild(button);
+  const template=$('#dmCopyScript')||$('#dmSaveProject')||$('#dmPlay');if(template?.className)button.className=template.className;
+ }else{
+  button=addButton(grid,'dmMarkReelPosted','✓ Mark as Posted',markPostedFallback);
+ }
+ updatePostedButton();
  return button;
 }
 function render(){
@@ -63,11 +92,12 @@ function render(){
  addButton(grid,'dmCopyReelCaptionHashtags','📋#️⃣ Copy caption + hashtags',()=>copy(captionAndHashtags(current()),'Caption and hashtags'));
  addButton(grid,'dmCopyReelLink','🔗 Copy Bible app link',()=>copy(MAIN_APP_URL,'Bible app link'));
  addButton(grid,'dmCopyReelAll','📲 Copy all for Facebook',()=>copy(fullPost(current()),'Facebook post'),true);
+ ensurePostedButton(grid);
  return true;
 }
 let timer=null;function schedule(){clearTimeout(timer);timer=setTimeout(render,60);}
 function boot(){schedule();const observer=new MutationObserver(()=>{if(location.hash==='#reelcreator'||$('#dmReelPreview'))schedule();});observer.observe(document.body,{childList:true,subtree:true});let n=0;const retry=setInterval(()=>{n++;if(render()||n>120)clearInterval(retry);},100);}
-window.DM_REEL_COPY_TOOLS={render,schedule};
-window.addEventListener('load',boot,{once:true});window.addEventListener('hashchange',schedule);document.addEventListener('dm-reel-studio-ready',()=>{render();setTimeout(render,100);});document.addEventListener('dm-reel-content-change',schedule);document.addEventListener('change',e=>{if(['dmTheme','dmReelContentType','dmReelLanguage'].includes(e.target?.id))schedule();});
+window.DM_REEL_COPY_TOOLS={render,schedule,updatePostedButton};
+window.addEventListener('load',boot,{once:true});window.addEventListener('hashchange',schedule);document.addEventListener('dm-reel-studio-ready',()=>{render();setTimeout(render,100);});document.addEventListener('dm-reel-content-change',()=>{schedule();setTimeout(updatePostedButton,80);});document.addEventListener('change',e=>{if(['dmTheme','dmReelContentType','dmReelLanguage'].includes(e.target?.id))schedule();});
 if(document.readyState!=='loading')boot();
 })();
