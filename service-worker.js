@@ -1,5 +1,5 @@
 /* De Mayo Bible Studies | Project Phoenix performance cache */
-const VERSION='1.27.56-dev-weekly-voiceover';
+const VERSION='1.27.57-dev-weekly-freeze-fix';
 const SHELL_CACHE=`de-mayo-shell-${VERSION}`;
 const RUNTIME_CACHE=`de-mayo-runtime-${VERSION}`;
 const OFFLINE_URL='./index.html';
