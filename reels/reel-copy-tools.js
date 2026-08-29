@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies — Reel sharing/copy tools restore v4 */
+/* De Mayo Bible Studies — Reel copy actions integrated with main toolbar v5 */
 (function(){
 'use strict';
 const MAIN_APP_URL='https://romerdemayo.github.io/de-mayo-bible-study/';
@@ -29,32 +29,43 @@ async function copy(value,label){
  try{await navigator.clipboard.writeText(text);window.toast?.(label+' copied.');}
  catch{const t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();try{document.execCommand('copy');window.toast?.(label+' copied.');}catch{window.toast?.('Copy failed.');}t.remove();}
 }
-function wire(panel){
- panel.querySelector('#dmCopyReelCaption').onclick=()=>copy(caption(current()),'Caption');
- panel.querySelector('#dmCopyReelHashtags').onclick=()=>copy(hashtags(current()),'Hashtags');
- panel.querySelector('#dmCopyReelCaptionHashtags').onclick=()=>copy(captionAndHashtags(current()),'Caption and hashtags');
- panel.querySelector('#dmCopyReelLink').onclick=()=>copy(MAIN_APP_URL,'Bible app link');
- panel.querySelector('#dmCopyReelAll').onclick=()=>copy(fullPost(current()),'Facebook post');
+function actionGrid(){
+ const play=$('#dmPlay');
+ if(play?.parentElement)return play.parentElement;
+ const copyScript=$('#dmCopyScript');
+ if(copyScript?.parentElement)return copyScript.parentElement;
+ const saveProject=$('#dmSaveProject');
+ if(saveProject?.parentElement)return saveProject.parentElement;
+ return null;
 }
-function makePanel(){
- const panel=document.createElement('section');
- panel.id='dmReelCopyTools';panel.className='card';panel.style.margin='16px 0';panel.style.position='relative';panel.style.zIndex='5';
- panel.innerHTML=`<h3>📣 Caption, hashtags & link</h3><p class="small-note">Copy separately, copy caption + hashtags together, or copy everything for Facebook Reels.</p><div class="dm-form-grid"><label>Caption<textarea id="dmReelCaptionPreview" rows="5" readonly></textarea></label><label>Hashtags<textarea id="dmReelHashtagsPreview" rows="4" readonly></textarea></label></div><p><a id="dmReelAppLink" class="text-link" href="${MAIN_APP_URL}" target="_blank" rel="noopener noreferrer">${MAIN_APP_URL}</a></p><div class="dm-reel-ai-actions" style="display:flex;flex-wrap:wrap;gap:10px"><button type="button" id="dmCopyReelCaption" class="ghost">📋 Copy caption</button><button type="button" id="dmCopyReelHashtags" class="ghost">#️⃣ Copy hashtags</button><button type="button" id="dmCopyReelCaptionHashtags" class="ghost">📋#️⃣ Copy caption + hashtags</button><button type="button" id="dmCopyReelLink" class="ghost">🔗 Copy Bible app link</button><button type="button" id="dmCopyReelAll" class="primary">📲 Copy all for Facebook</button></div>`;
- wire(panel);return panel;
+function addButton(grid,id,label,handler,primary=false){
+ let button=$('#'+id);
+ if(button&&button.parentElement!==grid)button.remove();
+ button=$('#'+id);
+ if(!button){
+  const template=$('#dmCopyScript')||$('#dmSaveProject')||$('#dmPlay')||grid.querySelector('button');
+  button=document.createElement('button');button.type='button';button.id=id;button.textContent=label;
+  if(template?.className)button.className=template.className;
+  if(primary){button.classList.remove('ghost');button.classList.add('primary');}
+  grid.appendChild(button);
+ }
+ button.onclick=handler;
+ return button;
 }
 function render(){
- const view=$('#view');
- if(!view)return false;
  const onReel=location.hash==='#reelcreator'||!!$('#dmReelPreview');
  if(!onReel)return false;
- let panel=$('#dmReelCopyTools');
- if(!panel){panel=makePanel();const anchor=$('#dmReelGeminiPanel')||$('#dmReelPreview')||view.firstElementChild;if(anchor&&anchor.parentNode===view)view.insertBefore(panel,anchor.nextSibling);else view.prepend(panel);}
- const item=current(),cap=$('#dmReelCaptionPreview'),tags=$('#dmReelHashtagsPreview');
- if(cap)cap.value=caption(item);if(tags)tags.value=hashtags(item);
- panel.hidden=false;
+ const oldPanel=$('#dmReelCopyTools');if(oldPanel)oldPanel.remove();
+ const grid=actionGrid();if(!grid)return false;
+ grid.dataset.dmCopyTools='inline';
+ addButton(grid,'dmCopyReelCaption','📋 Copy caption',()=>copy(caption(current()),'Caption'));
+ addButton(grid,'dmCopyReelHashtags','#️⃣ Copy hashtags',()=>copy(hashtags(current()),'Hashtags'));
+ addButton(grid,'dmCopyReelCaptionHashtags','📋#️⃣ Copy caption + hashtags',()=>copy(captionAndHashtags(current()),'Caption and hashtags'));
+ addButton(grid,'dmCopyReelLink','🔗 Copy Bible app link',()=>copy(MAIN_APP_URL,'Bible app link'));
+ addButton(grid,'dmCopyReelAll','📲 Copy all for Facebook',()=>copy(fullPost(current()),'Facebook post'),true);
  return true;
 }
-let timer=null;function schedule(){clearTimeout(timer);timer=setTimeout(render,50);}
+let timer=null;function schedule(){clearTimeout(timer);timer=setTimeout(render,60);}
 function boot(){schedule();const observer=new MutationObserver(()=>{if(location.hash==='#reelcreator'||$('#dmReelPreview'))schedule();});observer.observe(document.body,{childList:true,subtree:true});let n=0;const retry=setInterval(()=>{n++;if(render()||n>120)clearInterval(retry);},100);}
 window.DM_REEL_COPY_TOOLS={render,schedule};
 window.addEventListener('load',boot,{once:true});window.addEventListener('hashchange',schedule);document.addEventListener('dm-reel-studio-ready',()=>{render();setTimeout(render,100);});document.addEventListener('dm-reel-content-change',schedule);document.addEventListener('change',e=>{if(['dmTheme','dmReelContentType','dmReelLanguage'].includes(e.target?.id))schedule();});
