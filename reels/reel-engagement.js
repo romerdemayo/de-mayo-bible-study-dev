@@ -1,48 +1,21 @@
-/* De Mayo Bible Studies — Reel engagement layer v1
-   Adds a contextual conversation question to captions, weekly recap and preview without engagement bait. */
+/* De Mayo Bible Studies — Reel engagement layer v2
+   Builds a conversation question from the actual Reel scripture/message, with varied contextual fallbacks. */
 (function(){
 'use strict';
-const $=(s,r=document)=>r.querySelector(s);
-const clean=v=>String(v||'').replace(/\s+/g,' ').trim();
-const MAP={
- hope:['What are you trusting God for today?','Where do you need God’s hope this week?','What promise from God are you holding onto?'],
- faith:['What step of faith is God asking you to take?','What helps you keep trusting God when you cannot see the outcome?','Where are you choosing faith over fear today?'],
- peace:['What Bible verse brings you peace when life feels heavy?','What do you need to place in God’s hands today?','Where do you need the peace of Christ right now?'],
- strength:['Where do you need God’s strength today?','What has God helped you through recently?','Who could use this reminder of God’s strength today?'],
- gratitude:['What is one thing you are thanking God for today?','Where have you seen God’s goodness this week?','What blessing do you not want to take for granted today?'],
- courage:['Where do you need courage to follow God this week?','What fear are you choosing to surrender to God?','When has God given you courage at just the right time?']
-};
-function theme(){return clean($('#dmTheme')?.value||'hope').toLowerCase();}
-function hash(v){let h=0;for(const c of clean(v))h=((h<<5)-h+c.charCodeAt(0))|0;return Math.abs(h);}
-function current(){return window.DM_REEL_CREATOR?.getContent?.()||{};}
-function weekly(){return !!$('.dm-reel-canvas.dm-weekly-scene');}
+const $=(s,r=document)=>r.querySelector(s),clean=v=>String(v||'').replace(/\s+/g,' ').trim();
+const MAP={hope:['What situation in your life needs the hope of this message today?','How does this scripture change the way you see what you are facing?','What truth from this Reel do you want to carry into today?'],faith:['What would trusting God look like for you after hearing this message?','Which part of this scripture challenges your faith most today?','What is one step you can take because of this reminder?'],peace:['What can you place in God’s hands after hearing this message?','Which words from this Reel bring the most peace to your heart?','How can you practice this truth when your mind feels unsettled?'],strength:['Where can you rely on God’s strength after hearing this message?','Which part of this Reel reminds you that you do not have to face things alone?','How can this scripture strengthen you for what is ahead?'],gratitude:['What does this message make you thank God for today?','Where can you recognise God’s goodness in light of this scripture?','What blessing does this Reel remind you to notice today?'],courage:['What would courageous obedience look like for you after hearing this message?','What fear does this scripture encourage you to surrender?','How can you put this message into action when you need courage?']};
+function theme(){return clean($('#dmTheme')?.value||'hope').toLowerCase();}function hash(v){let h=0;for(const c of clean(v))h=((h<<5)-h+c.charCodeAt(0))|0;return Math.abs(h);}function current(){return window.DM_REEL_CREATOR?.getContent?.()||{};}function weekly(){return !!$('.dm-reel-canvas.dm-weekly-scene');}
+function topic(item){const text=clean(`${item.reference||''} ${item.verse||''} ${item.reflection||''}`).toLowerCase();const tests=[[/fear|afraid|anxious|worry/,'fear or worry'],[/wait|waiting|patient/,'waiting on God'],[/forgiv|mercy|grace/,'forgiveness and grace'],[/trust|depend|lean not/,'trusting God'],[/strength|weak|weary|tired/,'God’s strength'],[/peace|still|rest/,'God’s peace'],[/hope|future|promise/,'hope in God'],[/courage|bold|brave/,'courage'],[/thank|gratitude|bless/,'gratitude'],[/obey|obedien|follow/,'obedience'],[/pray|prayer/,'prayer'],[/love|loving/,'God’s love']];for(const [re,label] of tests)if(re.test(text))return label;return '';}
 function question(item=current()){
- if(weekly())return 'Which message spoke to you most this week — Monday, Tuesday, Wednesday, Thursday, Friday, Saturday or Sunday?';
- const pool=MAP[theme()]||MAP.hope;
- return pool[hash(`${item.reference||''}|${item.reflection||item.verse||''}`)%pool.length];
+ if(weekly())return 'Which message from this week is God calling you to put into practice, and why?';
+ const t=topic(item),seed=hash(`${item.reference||''}|${item.verse||''}|${item.reflection||''}|${item.prayer||''}`);
+ if(t){const contextual=[`After hearing this Reel about ${t}, what is one thing you want to do differently today?`,`What part of this message about ${t} speaks most directly to what you are facing right now?`,`How can you apply this reminder about ${t} in your life this week?`];return contextual[seed%contextual.length];}
+ const pool=MAP[theme()]||MAP.hope;return pool[seed%pool.length];
 }
-function addToCaption(text,item=current()){
- const q=question(item),base=String(text||'').trim();
- if(!q||base.includes(q))return base;
- return [base,`💬 Reflection: ${q}`].filter(Boolean).join('\n\n');
-}
-function card(){
- let el=$('#dmReelEngagementCard');if(el)return el;
- const actions=$('.dm-reel-actions');if(!actions)return null;
- el=document.createElement('section');el.id='dmReelEngagementCard';el.className='card';
- el.innerHTML='<div class="section-heading compact"><div><span class="eyebrow">ENGAGE YOUR VIEWERS</span><h3>💬 Conversation starter</h3></div></div><p id="dmReelEngagementQuestion" class="dm-engagement-question"></p><p class="small-note">This question is added automatically to your copied caption. Invite a real response rather than asking only for “Amen”.</p>';
- actions.insertAdjacentElement('beforebegin',el);return el;
-}
+function addToCaption(text,item=current()){const q=question(item),base=String(text||'').trim();if(!q||base.includes(q))return base;return [base,`💬 Reflection: ${q}`].filter(Boolean).join('\n\n');}
+function card(){let el=$('#dmReelEngagementCard');if(el)return el;const actions=$('.dm-reel-actions');if(!actions)return null;el=document.createElement('section');el.id='dmReelEngagementCard';el.className='card';el.innerHTML='<div class="section-heading compact"><div><span class="eyebrow">ENGAGE YOUR VIEWERS</span><h3>💬 Conversation starter</h3></div></div><p id="dmReelEngagementQuestion" class="dm-engagement-question"></p><p class="small-note">The question follows the scripture and message in this Reel, so viewers can respond to what they just heard.</p>';actions.insertAdjacentElement('beforebegin',el);return el;}
 function render(){const el=card(),p=$('#dmReelEngagementQuestion');if(el&&p)p.textContent=question();}
-function appendWeeklyScene(){
- const project=(()=>{try{return JSON.parse(localStorage.getItem('dm_weekly_reel_project_v1')||'null')}catch{return null}})();
- if(!project?.scenes?.length)return;
- if(!project.scenes.some(s=>s&&s.dmEngagement)){
-  project.scenes.push({k:'Your Turn',text:question(),ref:'Share your answer in the comments 💬',dmEngagement:true});
-  localStorage.setItem('dm_weekly_reel_project_v1',JSON.stringify(project));
- }
-}
-function boot(){render();window.addEventListener('hashchange',()=>setTimeout(render,100));document.addEventListener('dm-reel-content-change',()=>setTimeout(render,50));document.addEventListener('click',e=>{if(e.target?.id==='dmBuildWeeklyReel'){setTimeout(()=>{appendWeeklyScene();render();},120)}});}
-window.DM_REEL_ENGAGEMENT={question,addToCaption,render,appendWeeklyScene};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+function appendWeeklyScene(){const project=(()=>{try{return JSON.parse(localStorage.getItem('dm_weekly_reel_project_v1')||'null')}catch{return null}})();if(!project?.scenes?.length)return;if(!project.scenes.some(s=>s&&s.dmEngagement)){project.scenes.push({k:'Your Turn',text:question(),ref:'Share your answer in the comments 💬',dmEngagement:true});localStorage.setItem('dm_weekly_reel_project_v1',JSON.stringify(project));}}
+function boot(){render();window.addEventListener('hashchange',()=>setTimeout(render,100));document.addEventListener('dm-reel-content-change',()=>setTimeout(render,50));document.addEventListener('click',e=>{if(e.target?.id==='dmBuildWeeklyReel')setTimeout(()=>{appendWeeklyScene();render();},120);});}
+window.DM_REEL_ENGAGEMENT={question,addToCaption,render,appendWeeklyScene};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
