@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies — Reel copy actions integrated with main toolbar v9 */
+/* De Mayo Bible Studies — Reel copy actions integrated with main toolbar v10 */
 (function(){
 'use strict';
 const MAIN_APP_URL='https://romerdemayo.github.io/de-mayo-bible-study/';
@@ -12,7 +12,7 @@ function readPosted(){try{const v=JSON.parse(localStorage.getItem(POSTED_KEY)||'
 function writePosted(items){localStorage.setItem(POSTED_KEY,JSON.stringify(items.slice(0,120)));}
 function isPosted(item=current()){const sig=signature(item);return !!sig&&readPosted().some(x=>signature(x)===sig);}
 function loadEngagement(){if(window.DM_REEL_ENGAGEMENT||document.querySelector('script[data-dm-engagement]'))return;const s=document.createElement('script');s.src='reels/reel-engagement.js?v=12758';s.defer=true;s.dataset.dmEngagement='1';s.onload=()=>window.DM_REEL_ENGAGEMENT?.render?.();document.head.appendChild(s);}
-function loadDurationSync(){if(window.DM_REEL_DURATION_SYNC||document.querySelector('script[data-dm-duration-sync]'))return;const s=document.createElement('script');s.src='reels/reel-duration-sync.js?v=12759';s.defer=true;s.dataset.dmDurationSync='1';document.head.appendChild(s);}
+function loadDurationSync(){if(window.DM_REEL_DURATION_SYNC||document.querySelector('script[data-dm-duration-sync]'))return;const s=document.createElement('script');s.src='reels/reel-duration-sync.js?v=12760';s.defer=true;s.dataset.dmDurationSync='1';document.head.appendChild(s);}
 function hashtags(item){const map={hope:'#HopeInGod',faith:'#WalkByFaith',peace:'#PeaceInChrist',strength:'#GodIsMyStrength',gratitude:'#ThankfulToGod',courage:'#CourageInChrist'};const motivation=item?.contentType==='motivation';const topic=motivation?'#ChristianMotivation':(map[theme()]||'#FaithInGod');const raw=clean(item?.hashtags);const generated=raw?raw.split(/[\s,]+/).filter(Boolean):['#ChristianReels','#BibleVerse',topic,'#ChristianEncouragement','#DeMayoBibleStudies'];const tags=[];for(const value of generated){const tag=value.startsWith('#')?value:'#'+value;if(!tags.some(x=>x.toLowerCase()===tag.toLowerCase()))tags.push(tag);}if(!tags.some(x=>x.toLowerCase()==='#demayobiblestudies'))tags.push('#DeMayoBibleStudies');return tags.slice(0,7).join(' ');}
 function baseCaption(item){let text=clean(item?.caption);if(!text){const parts=[];if(item?.reference)parts.push(item.reference);if(item?.reflection)parts.push(item.reflection);if(item?.prayer)parts.push('Prayer: '+item.prayer);text=parts.join('\n\n');}return text.replace(/https?:\/\/\S+/gi,'').replace(/\n{3,}/g,'\n\n').trim();}
 function caption(item){const base=baseCaption(item);return window.DM_REEL_ENGAGEMENT?.addToCaption?.(base,item)||base;}
