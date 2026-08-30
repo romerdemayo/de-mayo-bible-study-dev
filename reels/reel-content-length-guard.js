@@ -1,5 +1,6 @@
 /* De Mayo Bible Studies — Reel content length guard
-   Protects preview + MP4 layouts from generated text that exceeds the safe reading area. */
+   Protects preview + MP4 layouts from generated text that exceeds the safe reading area,
+   while preserving the fuller generated text for the voice-over teleprompter. */
 (function(){
 'use strict';
 const MAX_REFLECTION_WORDS=55;
@@ -16,15 +17,22 @@ function shorten(text,maxWords){
 }
 function guard(content){
   if(!content||typeof content!=='object')return content;
-  const originalReflection=clean(content.reflection);
-  const originalPrayer=clean(content.prayer);
+  const originalReflection=clean(content.voiceoverReflection||content.reflection);
+  const originalPrayer=clean(content.voiceoverPrayer||content.prayer);
   const reflection=shorten(originalReflection,MAX_REFLECTION_WORDS);
   const prayer=shorten(originalPrayer,MAX_PRAYER_WORDS);
   let caption=clean(content.caption);
   if(originalReflection!==reflection && !caption.includes(originalReflection)){
     caption=[caption,originalReflection].filter(Boolean).join('\n\n');
   }
-  return {...content,reflection,prayer,caption};
+  return {
+    ...content,
+    reflection,
+    prayer,
+    voiceoverReflection:originalReflection,
+    voiceoverPrayer:originalPrayer,
+    caption
+  };
 }
 function loadReflectionSafety(){
   if(window.DM_REFLECTION_REEL_SAFE||document.querySelector('script[data-dm-reflection-safe]'))return;
