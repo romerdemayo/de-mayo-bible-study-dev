@@ -1,6 +1,6 @@
 /* De Mayo Bible Studies — Reel content length guard
    Protects preview + MP4 layouts from generated text that exceeds the safe reading area,
-   preserves fuller text for voice-over, and standardises every visible prayer closing. */
+   preserves fuller text for voice-over/paginated reflection, and standardises every visible prayer closing. */
 (function(){
 'use strict';
 const MAX_REFLECTION_WORDS=55;
@@ -37,8 +37,25 @@ function guard(content){
   if(originalReflection!==reflection && !caption.includes(originalReflection))caption=[caption,originalReflection].filter(Boolean).join('\n\n');
   return {...content,reflection,prayer,voiceoverReflection:originalReflection,voiceoverPrayer:originalPrayer,caption};
 }
-function loadReflectionSafety(){if(window.DM_REFLECTION_REEL_SAFE||document.querySelector('script[data-dm-reflection-safe]'))return;const script=document.createElement('script');script.src='reels/reel-reflection-safe.js?v=12779';script.defer=true;script.dataset.dmReflectionSafe='1';document.head.appendChild(script);}
-function install(){const api=window.DM_REEL_CREATOR;if(!api||api.__lengthGuardInstalled||typeof api.setGeneratedContent!=='function')return false;const original=api.setGeneratedContent.bind(api);api.setGeneratedContent=function(content){return original(guard(content));};api.__lengthGuardInstalled=true;window.DM_REEL_CONTENT_GUARD={guard,prayerClose,limits:{reflection:MAX_REFLECTION_WORDS,prayer:MAX_PRAYER_WORDS}};loadReflectionSafety();return true;}
+function loadReflectionSafety(){if(window.DM_REFLECTION_REEL_SAFE||document.querySelector('script[data-dm-reflection-safe]'))return;const script=document.createElement('script');script.src='reels/reel-reflection-safe.js?v=12782';script.defer=true;script.dataset.dmReflectionSafe='1';document.head.appendChild(script);}
+function install(){
+ const api=window.DM_REEL_CREATOR;if(!api||api.__lengthGuardInstalled||typeof api.setGeneratedContent!=='function')return false;
+ const original=api.setGeneratedContent.bind(api);
+ api.setGeneratedContent=function(content){
+   const guarded=guard(content),result=original(guarded);
+   /* Reel Creator's core model keeps a curated field list. Re-attach the full narration fields
+      to the returned generated object so getContent(), teleprompter, reflection pagination and MP4
+      all receive the complete text rather than only the shortened visible fallback. */
+   if(result&&typeof result==='object'){
+     result.voiceoverReflection=guarded.voiceoverReflection;
+     result.voiceoverPrayer=guarded.voiceoverPrayer;
+   }
+   return result;
+ };
+ api.__lengthGuardInstalled=true;
+ window.DM_REEL_CONTENT_GUARD={guard,prayerClose,limits:{reflection:MAX_REFLECTION_WORDS,prayer:MAX_PRAYER_WORDS}};
+ loadReflectionSafety();return true;
+}
 function boot(){loadReflectionSafety();if(install())return;let tries=0;const timer=setInterval(()=>{tries++;if(install()||tries>40)clearInterval(timer);},100);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
