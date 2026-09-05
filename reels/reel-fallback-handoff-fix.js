@@ -1,43 +1,15 @@
-/* De Mayo Bible Studies — Gemini -> offline Reel handoff fix v1
-   Ensures devotional generation automatically switches to fresh built-in content
-   when Gemini repeats, hits quota, rate limits, or is temporarily unavailable. */
+/* De Mayo Bible Studies — Gemini -> offline Reel handoff fix v2
+   Any failed devotional generation, or an offline browser, falls back to fresh built-in content. */
 (function(){
 'use strict';
-const $=s=>document.querySelector(s);
-let lastToken='',running=false,observer=null;
+const $=s=>document.querySelector(s);let lastToken='',running=false,observer=null;
 function clean(v=''){return String(v||'').replace(/\s+/g,' ').trim();}
 function devotional(){return ($('#dmReelContentType')?.value||'devotional')==='devotional';}
-function needsFallback(box){
-  if(!box||!devotional())return false;
-  const text=clean(box.textContent).toLowerCase();
-  const failed=box.dataset.type==='error'||text.startsWith('⚠');
-  return failed&&/repeated a recent verse|quota|rate limit|429|503|unavailable|high demand|temporar|busy|limit|failed/.test(text);
-}
-function handoff(){
-  const box=$('#dmReelGeminiStatus');if(!needsFallback(box)||running)return;
-  const token=clean(box.textContent)+'|'+box.dataset.type;
-  if(token===lastToken)return;lastToken=token;running=true;
-  setTimeout(()=>{
-    try{
-      const fallback=window.DM_REEL_QUOTA_FALLBACK;
-      if(fallback?.applyFallback){
-        fallback.applyFallback();
-      }else{
-        box.hidden=false;box.dataset.type='loading';box.textContent='Gemini could not provide a fresh verse. Loading a fresh built-in Reel…';
-        let tries=0;const timer=setInterval(()=>{tries++;if(window.DM_REEL_QUOTA_FALLBACK?.applyFallback){clearInterval(timer);window.DM_REEL_QUOTA_FALLBACK.applyFallback();}else if(tries>=30){clearInterval(timer);box.dataset.type='error';box.textContent='Built-in Reel generator is still loading. Refresh once and try again.';}},100);
-      }
-    }finally{setTimeout(()=>{running=false;},500);}
-  },60);
-}
-function watch(){
-  const box=$('#dmReelGeminiStatus');
-  if(!box){setTimeout(watch,120);return;}
-  if(observer)observer.disconnect();
-  observer=new MutationObserver(handoff);
-  observer.observe(box,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-type','hidden']});
-  handoff();
-}
-function boot(){watch();document.addEventListener('dm-reel-studio-ready',()=>setTimeout(watch,50));document.addEventListener('dm-reel-content-change',()=>{if(!needsFallback($('#dmReelGeminiStatus')))lastToken='';});window.addEventListener('hashchange',()=>setTimeout(watch,80));}
+function failedStatus(box){if(!box||!devotional())return false;const text=clean(box.textContent).toLowerCase(),type=clean(box.dataset.type).toLowerCase();if(navigator.onLine===false)return true;if(type==='error')return true;if(text.startsWith('⚠')||text.startsWith('error'))return true;return /quota|rate limit|429|503|500|network|offline|unavailable|high demand|temporar|busy|limit|failed|failure|could not|couldn.t|cannot|timeout|timed out|repeated a recent verse|gemini.*error|generation.*error/.test(text);}
+function applyOffline(box){const fallback=window.DM_REEL_QUOTA_FALLBACK;if(fallback?.applyFallback){box.hidden=false;box.dataset.type='loading';box.textContent='Gemini is unavailable. Loading a fresh offline Reel…';fallback.applyFallback();return true;}return false;}
+function handoff(force=false){const box=$('#dmReelGeminiStatus');if(!box||!devotional()||running)return;if(!force&&!failedStatus(box))return;const token=(force?'force|':'')+clean(box.textContent)+'|'+box.dataset.type+'|'+navigator.onLine;if(!force&&token===lastToken)return;lastToken=token;running=true;setTimeout(()=>{try{if(applyOffline(box))return;box.hidden=false;box.dataset.type='loading';box.textContent='Loading a fresh offline Reel…';let tries=0;const timer=setInterval(()=>{tries++;if(applyOffline(box)){clearInterval(timer);}else if(tries>=50){clearInterval(timer);box.dataset.type='error';box.textContent='Offline Reel generator could not start. Reload the Reel Creator and try again.';}},100);}finally{setTimeout(()=>{running=false;},700);}},40);}
+function watch(){const box=$('#dmReelGeminiStatus');if(!box){setTimeout(watch,120);return;}if(observer)observer.disconnect();observer=new MutationObserver(()=>handoff(false));observer.observe(box,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-type','hidden']});handoff(false);}
+function boot(){watch();document.addEventListener('dm-reel-studio-ready',()=>setTimeout(watch,50));document.addEventListener('dm-reel-content-change',()=>{if(!failedStatus($('#dmReelGeminiStatus')))lastToken='';});window.addEventListener('offline',()=>handoff(true));window.addEventListener('hashchange',()=>setTimeout(watch,80));}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.DM_REEL_FALLBACK_HANDOFF_FIX={handoff,watch};
+window.DM_REEL_FALLBACK_HANDOFF_FIX={handoff,watch,needsFallback:failedStatus,forceOffline:()=>handoff(true)};
 })();
