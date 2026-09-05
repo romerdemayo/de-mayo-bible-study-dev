@@ -1,38 +1,20 @@
-/* De Mayo Bible Studies — Reflection Reel pagination v4
-   Shows the full reflection across readable virtual scenes and keeps MP4 navigation in sync. */
+/* De Mayo Bible Studies — Reflection Reel pagination v5
+   Shows the complete preserved reflection across readable virtual scenes. */
 (function(){
 'use strict';
-const PART_WORDS=34;
-let virtualPart=0,pendingPart=null,applying=false;
+const PART_WORDS=34;let virtualPart=0,pendingPart=null,applying=false;
 function clean(v=''){return String(v||'').replace(/\s+/g,' ').trim();}
-function splitWords(text,maxWords=PART_WORDS){
- const words=clean(text).split(' ').filter(Boolean);if(!words.length)return [''];if(words.length<=maxWords)return [words.join(' ')];
- const parts=[];let start=0;
- while(start<words.length){let end=Math.min(words.length,start+maxWords);if(end<words.length){const min=Math.min(end,start+Math.max(20,maxWords-8));for(let i=end-1;i>=min;i--){if(/[.!?][”"']?$/.test(words[i])){end=i+1;break;}}}parts.push(words.slice(start,end).join(' '));start=end;}
- return parts;
-}
+function splitWords(text,maxWords=PART_WORDS){const words=clean(text).split(' ').filter(Boolean);if(!words.length)return [''];if(words.length<=maxWords)return[words.join(' ')];const parts=[];let start=0;while(start<words.length){let end=Math.min(words.length,start+maxWords);if(end<words.length){const min=Math.min(end,start+Math.max(20,maxWords-8));for(let i=end-1;i>=min;i--){if(/[.!?][”"']?$/.test(words[i])){end=i+1;break;}}}parts.push(words.slice(start,end).join(' '));start=end;}return parts;}
 function content(){try{return window.DM_REEL_CREATOR?.getContent?.()||{}}catch{return{}}}
-function fullReflection(){const c=content();return clean(c.voiceoverReflection||c.reflection||'')}
+function fullReflection(){const c=content(),saved=window.DM_REEL_FULL_NARRATION||{};return clean(saved.reflection||c.voiceoverReflection||c.reflection||'');}
 function parts(){return splitWords(fullReflection())}
 function labelIsReflection(label){label=clean(label).toLowerCase();return label==='reflection'||label==='repleksyon'||/^reflection\s+\d+\/\d+$/.test(label)||/^repleksyon\s+\d+\/\d+$/.test(label)}
 function coreKind(){const kicker=document.querySelector('.dm-reel-kicker');if(!kicker)return'';const label=clean(kicker.textContent).toLowerCase();if(labelIsReflection(label))return'reflection';if(label==='prayer'||label==='panalangin')return'prayer';return'verse'}
 function setCount(kind,ps){const n=document.querySelector('#dmSceneCount');if(!n)return;const total=ps.length+2;let current=1;if(kind==='reflection')current=2+virtualPart;else if(kind==='prayer')current=total;n.textContent=`Scene ${current} of ${total}`;}
 function paintReflection(ps){const canvas=document.querySelector('.dm-reel-canvas'),kicker=canvas?.querySelector('.dm-reel-kicker'),message=canvas?.querySelector('.dm-reel-message');if(!canvas||!kicker||!message)return;virtualPart=Math.max(0,Math.min(ps.length-1,virtualPart));const tl=/repleksyon/i.test(kicker.textContent)?'Repleksyon':'Reflection';kicker.textContent=ps.length>1?`${tl} ${virtualPart+1}/${ps.length}`:tl;message.textContent=ps[virtualPart]||'';message.dataset.dmFullReflection=fullReflection();message.classList.remove('dm-text-short','dm-text-medium','dm-text-long','dm-text-xl');const wc=clean(message.textContent).split(' ').filter(Boolean).length;message.classList.add(wc>29?'dm-text-long':'dm-text-medium','dm-reflection-safe');canvas.classList.add('dm-reflection-scene');setCount('reflection',ps);}
-function apply(){if(applying)return;const ps=parts();if(!ps[0])return;const kind=coreKind();applying=true;try{if(kind==='reflection'){if(pendingPart!==null){virtualPart=Math.max(0,Math.min(ps.length-1,pendingPart));pendingPart=null;}paintReflection(ps);}else{setCount(kind,ps);}}finally{applying=false}}
-function onNav(e){const btn=e.target?.closest?.('#dmNext,#dmPrev');if(!btn)return;const ps=parts();if(ps.length<=1)return;const kind=coreKind(),next=btn.id==='dmNext';
- if(kind==='reflection'){
-   if(next&&virtualPart<ps.length-1){e.preventDefault();e.stopImmediatePropagation();virtualPart++;paintReflection(ps);return;}
-   if(!next&&virtualPart>0){e.preventDefault();e.stopImmediatePropagation();virtualPart--;paintReflection(ps);return;}
-   if(next){pendingPart=0;return;}
-   pendingPart=0;return;
- }
- if(kind==='verse'&&next){pendingPart=0;return;}
- if(kind==='prayer'&&!next){pendingPart=ps.length-1;return;}
- if(kind==='prayer'&&next){pendingPart=0;return;}
- if(kind==='verse'&&!next){pendingPart=0;return;}
-}
+function apply(){if(applying)return;const ps=parts();if(!ps[0])return;const kind=coreKind();applying=true;try{if(kind==='reflection'){if(pendingPart!==null){virtualPart=Math.max(0,Math.min(ps.length-1,pendingPart));pendingPart=null;}paintReflection(ps);}else setCount(kind,ps);}finally{applying=false}}
+function onNav(e){const btn=e.target?.closest?.('#dmNext,#dmPrev');if(!btn)return;const ps=parts();if(ps.length<=1)return;const kind=coreKind(),next=btn.id==='dmNext';if(kind==='reflection'){if(next&&virtualPart<ps.length-1){e.preventDefault();e.stopImmediatePropagation();virtualPart++;paintReflection(ps);return;}if(!next&&virtualPart>0){e.preventDefault();e.stopImmediatePropagation();virtualPart--;paintReflection(ps);return;}pendingPart=next?0:0;return;}if(kind==='verse'&&next){pendingPart=0;return;}if(kind==='prayer'&&!next){pendingPart=ps.length-1;return;}pendingPart=0;}
 let scheduled=false;function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;apply();});}
-function boot(){document.addEventListener('click',onNav,true);document.addEventListener('dm-reel-content-change',schedule);window.addEventListener('hashchange',()=>{virtualPart=0;pendingPart=0;schedule()});const observer=new MutationObserver(schedule);observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true});schedule();}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.DM_REFLECTION_REEL_SAFE={apply,split:splitWords,limit:PART_WORDS,getParts:parts};
+function boot(){document.addEventListener('click',onNav,true);['dm-reel-content-change','dm-reel-full-narration-ready','dm-reel-manual-content-ready'].forEach(name=>document.addEventListener(name,()=>{virtualPart=0;pendingPart=0;schedule();}));window.addEventListener('hashchange',()=>{virtualPart=0;pendingPart=0;schedule()});const observer=new MutationObserver(schedule);observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true});schedule();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();window.DM_REFLECTION_REEL_SAFE={apply,split:splitWords,limit:PART_WORDS,getParts:parts,getFullReflection:fullReflection};
 })();
