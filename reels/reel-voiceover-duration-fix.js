@@ -1,34 +1,45 @@
-/* De Mayo Bible Studies — daily voice-over duration bridge v10
-   Manual pasted content is read exactly as supplied: full verse, full reflection and full prayer.
-   Generated content can still be duration-balanced. Engagement remains visual only. */
+/* De Mayo Bible Studies — daily voice-over duration bridge v11
+   Always uses the preserved full narration for manual, offline and generated Reels.
+   Reflection and prayer are never shortened in the teleprompter. Engagement remains visual only. */
 (function(){
 'use strict';
 const $=s=>document.querySelector(s),clean=v=>String(v||'').replace(/\s+/g,' ').trim(),words=v=>clean(v).split(' ').filter(Boolean);
-function current(){try{return window.DM_REEL_CREATOR?.getContent?.()||{}}catch{return{}}}function weekly(){return !!$('.dm-reel-canvas.dm-weekly-scene');}function selectedSeconds(){const n=Number($('#dmDuration')?.value||60);return Math.max(15,Math.min(120,Number.isFinite(n)?n:60));}
-function targetWords(){return Math.max(24,Math.min(192,Math.round(selectedSeconds()*1.60)));}function trimTo(value,limit){const all=words(value);return all.length<=limit?clean(value):all.slice(0,Math.max(0,limit)).join(' ').replace(/[,:;\-–—]+$/,'')+(limit>0?'…':'');}
+function current(){try{return window.DM_REEL_CREATOR?.getContent?.()||{}}catch{return{}}}
+function saved(){return window.DM_REEL_FULL_NARRATION||{}}
+function weekly(){return !!$('.dm-reel-canvas.dm-weekly-scene');}
+function selectedSeconds(){const n=Number($('#dmDuration')?.value||60);return Math.max(15,Math.min(120,Number.isFinite(n)?n:60));}
+function targetWords(){return Math.max(24,Math.min(192,Math.round(selectedSeconds()*1.60)));}
 function prayerClose(value){let p=clean(value).replace(/(?:,?\s*)?(?:in\s+jesus(?:'|’)?\s+name(?:\s*,?\s*(?:we\s+pray)?)?[,\s.!]*)?amen[.!]*$/i,'').trim();p=p.replace(/[,.!?;:]+$/,'').trim();return `${p}${p?'. ':''}In Jesus’ name, Amen.`;}
-const FILLERS=['Take a quiet moment and let this truth settle in your heart. God is not asking you to carry tomorrow before it arrives. He is inviting you to trust Him in this moment and take the next faithful step with Him.','Whatever you are facing today, remember that God sees the whole picture even when you only see one part. His Word is still dependable, His presence is still near, and His grace is enough for what is in front of you.','You can bring your questions, worries, hopes, and plans to God. You do not need perfect words. Come honestly, listen for what His Word is reminding you of, and choose to respond with faith rather than fear.','As you continue through your day, carry this scripture with you. Return to it when your thoughts become heavy. Let it shape your response, steady your heart, and remind you that God remains faithful in every season.','Remember that spiritual growth often happens through small faithful choices. Hold on to what God has shown you here, pray over it, and look for one practical way to live it out before this day is over.'];
-function closeText(){return '';}
+function source(){const c=current(),s=saved();return clean(s.source||c.source).toLowerCase();}
 function build(){
  if(weekly())return '';
- const c=current(),verse=clean(c.verse),reference=clean(c.reference),manual=String(c.source||'').toLowerCase()==='manual';
- const fullReflection=clean(c.voiceoverReflection||c.reflection),prayer=prayerClose(c.voiceoverPrayer||c.prayer);
- if(manual)return [verse,reference,'Let us reflect.',fullReflection,'Let us pray.',prayer].filter(Boolean).join('\n\n');
- const target=targetWords(),ending=`Let us pray. ${prayer}`,endingCount=words(ending).length,opening=[verse,reference,'Let us reflect.'].filter(Boolean).join(' '),openingCount=words(opening).length;
- const minimumCore=openingCount+endingCount+12,budget=Math.max(minimumCore,target),reflectionBudget=Math.max(12,budget-openingCount-endingCount);let reflection=trimTo(fullReflection,reflectionBudget);
- let parts=[verse,reference,'Let us reflect.',reflection],count=words(parts.join(' ')).length;for(const filler of FILLERS){const remaining=budget-count-endingCount;if(remaining<=8)break;const piece=trimTo(filler,Math.min(words(filler).length,remaining));if(piece){parts.push(piece);count=words(parts.join(' ')).length;}}parts.push('Let us pray.',prayer);return parts.filter(Boolean).join('\n\n');
+ const c=current(),s=saved();
+ const verse=clean(s.verse||c.verse),reference=clean(s.reference||c.reference);
+ const fullReflection=clean(s.reflection||c.voiceoverReflection||c.reflection);
+ const prayer=prayerClose(s.prayer||c.voiceoverPrayer||c.prayer);
+ if(!verse&&!reference&&!fullReflection&&!prayer)return '';
+ return [verse,reference,'Let us reflect.',fullReflection,'Let us pray.',prayer].filter(Boolean).join('\n\n');
 }
-function apply(){const text=build();if(!text)return false;const area=$('#dmVoiceoverScript'),full=$('#dmVoiceoverFullscreenScript');if(area&&area.textContent!==text){area.textContent=text;area.scrollTop=0;}if(full&&full.textContent!==text){full.textContent=text;full.scrollTop=0;}const count=words(text).length,estimate=Math.ceil(count/96*60),seconds=selectedSeconds(),info=$('#dmVoiceoverWordCount'),manual=String(current().source||'').toLowerCase()==='manual';if(info)info.textContent=manual?`${count} words • about ${estimate} seconds • full pasted script`:`${count} words • about ${estimate} seconds • selected Reel ${seconds}s • engagement is visual only`;return true;}
+function apply(){
+ const text=build();if(!text)return false;
+ const area=$('#dmVoiceoverScript'),full=$('#dmVoiceoverFullscreenScript');
+ if(area&&area.textContent!==text){area.textContent=text;area.scrollTop=0;area.dataset.dmFullNarration='1';}
+ if(full&&full.textContent!==text){full.textContent=text;full.scrollTop=0;full.dataset.dmFullNarration='1';}
+ const count=words(text).length,estimate=Math.ceil(count/96*60),info=$('#dmVoiceoverWordCount'),src=source();
+ if(info){const label=src==='manual'?'full pasted script':src.includes('built-in')||src.includes('offline')?'full offline script':'full generated script';info.textContent=`${count} words • about ${estimate} seconds • ${label}`;}
+ return true;
+}
 function fixTimer(){document.querySelectorAll('#dmVoiceoverTimer,#dmFullscreenTimer').forEach(el=>{if(el.textContent.includes('/ 1:30'))el.textContent=el.textContent.replace('/ 1:30','/ 2:00');});}
-let queued=false;function schedule(delay=80){if(queued)return;queued=true;setTimeout(()=>{queued=false;apply();fixTimer();},delay);}
+let queued=false;function schedule(delay=60){if(queued)return;queued=true;setTimeout(()=>{queued=false;apply();fixTimer();},delay);}
 function boot(){
  schedule(120);
- ['dm-reel-content-change','dm-reel-generated','dm-reel-studio-ready','dm-reel-engagement-ready','dm-reel-manual-content-ready'].forEach(name=>document.addEventListener(name,()=>schedule(80)));
+ ['dm-reel-content-change','dm-reel-generated','dm-reel-studio-ready','dm-reel-engagement-ready','dm-reel-manual-content-ready','dm-reel-full-narration-ready'].forEach(name=>document.addEventListener(name,()=>schedule(40)));
  document.addEventListener('change',e=>{if(e.target?.id==='dmDuration')schedule(30);});
- /* Capture phase is intentional: refresh the full pasted script before reel-voiceover.js opens the fullscreen prompter. */
+ /* Capture phase refreshes the exact full narration before reel-voiceover.js opens fullscreen. */
  document.addEventListener('click',e=>{if(e.target?.id==='dmStartVoiceover'){apply();fixTimer();}},true);
- document.addEventListener('click',e=>{if(e.target?.id==='dmRefreshVoiceoverScript')schedule(40);});
+ document.addEventListener('click',e=>{if(e.target?.id==='dmRefreshVoiceoverScript')schedule(20);});
  const timer=setInterval(fixTimer,500);setTimeout(()=>clearInterval(timer),125000);
 }
-window.DM_REEL_VOICEOVER_DURATION_FIX={apply,build,selectedSeconds,targetWords,prayerClose,closeText};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.DM_REEL_VOICEOVER_DURATION_FIX={apply,build,selectedSeconds,targetWords,prayerClose,source};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
