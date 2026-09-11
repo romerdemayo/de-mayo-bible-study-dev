@@ -1,5 +1,5 @@
-/* De Mayo Bible Studies — Reel content length guard v3
-   Keeps full narration text outside the core model so teleprompter and paginated Reel never lose it. */
+/* De Mayo Bible Studies — Reel content length guard v4
+   Keeps the exact raw narration before any visual shortening so the teleprompter can always read the complete reflection and prayer. */
 (function(){
 'use strict';
 const MAX_REFLECTION_WORDS=55,MAX_PRAYER_WORDS=40;
@@ -10,7 +10,21 @@ function shortenPrayer(text,maxWords){const closing='In Jesus’ name, Amen.';le
 function guard(content){if(!content||typeof content!=='object')return content;const originalReflection=clean(content.voiceoverReflection||content.reflection),originalPrayer=prayerClose(content.voiceoverPrayer||content.prayer),reflection=shorten(originalReflection,MAX_REFLECTION_WORDS),prayer=shortenPrayer(originalPrayer,MAX_PRAYER_WORDS);let caption=clean(content.caption);if(originalReflection!==reflection&&!caption.includes(originalReflection))caption=[caption,originalReflection].filter(Boolean).join('\n\n');return {...content,reflection,prayer,voiceoverReflection:originalReflection,voiceoverPrayer:originalPrayer,caption};}
 function full(){return window.DM_REEL_FULL_NARRATION||{};}
 function loadReflectionSafety(){if(window.DM_REFLECTION_REEL_SAFE||document.querySelector('script[data-dm-reflection-safe]'))return;const script=document.createElement('script');script.src='reels/reel-reflection-safe.js?v=12783';script.defer=true;script.dataset.dmReflectionSafe='1';document.head.appendChild(script);}
-function install(){const api=window.DM_REEL_CREATOR;if(!api||api.__lengthGuardInstalled||typeof api.setGeneratedContent!=='function')return false;const original=api.setGeneratedContent.bind(api);api.setGeneratedContent=function(content){const guarded=guard(content);window.DM_REEL_FULL_NARRATION={reflection:guarded.voiceoverReflection||guarded.reflection||'',prayer:guarded.voiceoverPrayer||guarded.prayer||'',source:guarded.source||'',reference:guarded.reference||'',verse:guarded.verse||''};const result=original(guarded);document.dispatchEvent(new CustomEvent('dm-reel-full-narration-ready',{detail:window.DM_REEL_FULL_NARRATION}));return result;};api.__lengthGuardInstalled=true;window.DM_REEL_CONTENT_GUARD={guard,prayerClose,full,limits:{reflection:MAX_REFLECTION_WORDS,prayer:MAX_PRAYER_WORDS}};loadReflectionSafety();return true;}
+function install(){const api=window.DM_REEL_CREATOR;if(!api||api.__lengthGuardInstalled||typeof api.setGeneratedContent!=='function')return false;const original=api.setGeneratedContent.bind(api);api.setGeneratedContent=function(content){
+  const raw={
+    reflection:clean(content?.voiceoverReflection||content?.reflection),
+    prayer:prayerClose(content?.voiceoverPrayer||content?.prayer),
+    source:clean(content?.source),
+    reference:clean(content?.reference),
+    verse:clean(content?.verse)
+  };
+  window.DM_REEL_RAW_NARRATION=raw;
+  const guarded=guard(content);
+  window.DM_REEL_FULL_NARRATION={reflection:raw.reflection||guarded.voiceoverReflection||guarded.reflection||'',prayer:raw.prayer||guarded.voiceoverPrayer||guarded.prayer||'',source:raw.source||guarded.source||'',reference:raw.reference||guarded.reference||'',verse:raw.verse||guarded.verse||''};
+  const result=original(guarded);
+  document.dispatchEvent(new CustomEvent('dm-reel-full-narration-ready',{detail:window.DM_REEL_FULL_NARRATION}));
+  return result;
+};api.__lengthGuardInstalled=true;window.DM_REEL_CONTENT_GUARD={guard,prayerClose,full,limits:{reflection:MAX_REFLECTION_WORDS,prayer:MAX_PRAYER_WORDS}};loadReflectionSafety();return true;}
 function boot(){loadReflectionSafety();if(install())return;let tries=0;const timer=setInterval(()=>{tries++;if(install()||tries>40)clearInterval(timer);},100);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
