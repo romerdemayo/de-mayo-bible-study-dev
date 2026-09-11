@@ -1,19 +1,25 @@
-/* De Mayo Bible Studies — daily voice-over duration bridge v11
-   Always uses the preserved full narration for manual, offline and generated Reels.
+/* De Mayo Bible Studies — daily voice-over duration bridge v12
+   Always uses the exact raw narration for manual, offline and generated Reels.
    Reflection and prayer are never shortened in the teleprompter. Engagement remains visual only. */
 (function(){
 'use strict';
 const $=s=>document.querySelector(s),clean=v=>String(v||'').replace(/\s+/g,' ').trim(),words=v=>clean(v).split(' ').filter(Boolean);
 function current(){try{return window.DM_REEL_CREATOR?.getContent?.()||{}}catch{return{}}}
-function saved(){return window.DM_REEL_FULL_NARRATION||{}}
+function matchingSaved(){
+ const c=current(),raw=window.DM_REEL_RAW_NARRATION||{},full=window.DM_REEL_FULL_NARRATION||{};
+ const cref=clean(c.reference).toLowerCase(),rref=clean(raw.reference).toLowerCase(),fref=clean(full.reference).toLowerCase();
+ if(cref&&rref===cref)return raw;
+ if(cref&&fref===cref)return full;
+ return {};
+}
 function weekly(){return !!$('.dm-reel-canvas.dm-weekly-scene');}
 function selectedSeconds(){const n=Number($('#dmDuration')?.value||60);return Math.max(15,Math.min(120,Number.isFinite(n)?n:60));}
 function targetWords(){return Math.max(24,Math.min(192,Math.round(selectedSeconds()*1.60)));}
 function prayerClose(value){let p=clean(value).replace(/(?:,?\s*)?(?:in\s+jesus(?:'|’)?\s+name(?:\s*,?\s*(?:we\s+pray)?)?[,\s.!]*)?amen[.!]*$/i,'').trim();p=p.replace(/[,.!?;:]+$/,'').trim();return `${p}${p?'. ':''}In Jesus’ name, Amen.`;}
-function source(){const c=current(),s=saved();return clean(s.source||c.source).toLowerCase();}
+function source(){const c=current(),s=matchingSaved();return clean(s.source||c.source).toLowerCase();}
 function build(){
  if(weekly())return '';
- const c=current(),s=saved();
+ const c=current(),s=matchingSaved();
  const verse=clean(s.verse||c.verse),reference=clean(s.reference||c.reference);
  const fullReflection=clean(s.reflection||c.voiceoverReflection||c.reflection);
  const prayer=prayerClose(s.prayer||c.voiceoverPrayer||c.prayer);
@@ -35,7 +41,6 @@ function boot(){
  schedule(120);
  ['dm-reel-content-change','dm-reel-generated','dm-reel-studio-ready','dm-reel-engagement-ready','dm-reel-manual-content-ready','dm-reel-full-narration-ready'].forEach(name=>document.addEventListener(name,()=>schedule(40)));
  document.addEventListener('change',e=>{if(e.target?.id==='dmDuration')schedule(30);});
- /* Capture phase refreshes the exact full narration before reel-voiceover.js opens fullscreen. */
  document.addEventListener('click',e=>{if(e.target?.id==='dmStartVoiceover'){apply();fixTimer();}},true);
  document.addEventListener('click',e=>{if(e.target?.id==='dmRefreshVoiceoverScript')schedule(20);});
  const timer=setInterval(fixTimer,500);setTimeout(()=>clearInterval(timer),125000);
