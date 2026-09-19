@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies — Reel Action Center v5.1 — complete collapsible workflow */
+/* De Mayo Bible Studies — Reel Action Center v6 — complete collapsible workflow */
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
@@ -30,7 +30,9 @@ function createBody(){
 }
 function videoExtras(){return '<div class="dm-dash-fields">'+selectProxy('Reel Sound','dmMusic')+'</div><div class="dm-volume-note">Choose your sound and volume in Reel Sound settings, then create your MP4.</div><div class="dm-action-grid">'+(ITEMS.Video.map(x=>actionButton(...x)).join(''))+'</div>'}
 function weeklyBody(){const mgr=$('#dmReelScheduleManager');if(!mgr)return '<p class="dm-volume-note">Weekly Reel Schedule Manager is loading…</p>';return '<div class="dm-weekly-shortcuts"><button data-weekly-target="dmReelScheduleEnabled">☑ Enable / Pause Weekly Plan</button><button data-weekly-target="dmSaveReelSchedule">💾 Save Schedule</button><button data-weekly-target="dmSaveReelForReview">📥 Save Reel for Review</button><button data-weekly-target="dmOpenScheduledReel">✏️ Open Draft</button><button data-weekly-target="dmApproveScheduledReel">✓ Approve Reel</button><button data-weekly-target="dmClearScheduledReel">🗑 Remove Draft</button></div><button class="dm-jump-original" data-jump="#dmReelScheduleManager">Open full schedule settings ↓</button>'}
-function bodyFor(key){if(key==='Create')return createBody();if(key==='Video')return videoExtras();if(key==='Weekly')return weeklyBody();return '<div class="dm-action-grid">'+(ITEMS[key]||[]).map(x=>actionButton(...x)).join('')+'</div>'}
+function recordExtras(){const script=$('#dmVoiceoverScript')?.textContent?.trim()||'Your complete prepared reading script will appear here after you create a Reel.';return '<div class="dm-top-script"><div class="dm-top-script-head"><b>📜 Prepared Reading Script</b><span>Up to 2:00</span></div><div class="dm-top-script-text">'+script.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div><button class="dm-jump-original" data-jump="#dmVoiceoverScript">Open full teleprompter settings ↓</button></div><div class="dm-action-grid">'+ITEMS.Recording.map(x=>actionButton(...x)).join('')+'</div>'}
+function manualExtras(){return '<div class="dm-top-manual"><b>✍️ Paste My Verse, Reflection & Prayer</b><p>Paste everything in one box. The app will pick out the reference, verse, reflection and prayer.</p><textarea id="dmTopManualPaste" rows="7" placeholder="Reference: Psalm 46:10\n\nVerse: Be still, and know that I am God...\n\nReflection: ...\n\nPrayer: ..."></textarea><button type="button" id="dmTopUseManual">✨ Use This Content</button></div>'}
+function bodyFor(key){if(key==='Create')return createBody()+manualExtras();if(key==='Recording')return recordExtras();if(key==='Video')return videoExtras();if(key==='Weekly')return weeklyBody();return '<div class="dm-action-grid">'+(ITEMS[key]||[]).map(x=>actionButton(...x)).join('')+'</div>'}
 function build(){
  if(location.hash!=='#reelcreator')return;
  let panel=$('#dmReelActionCenter');
@@ -51,10 +53,13 @@ function wire(){
  panel.querySelector('[data-open-sound]')?.addEventListener('click',()=>openGroup('Video'));
  panel.querySelectorAll('[data-weekly-target]').forEach(b=>b.onclick=()=>$('#'+b.dataset.weeklyTarget)?.click());
  panel.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>$(b.dataset.jump)?.scrollIntoView({behavior:'smooth',block:'start'}));
+ const topPaste=$('#dmTopManualPaste'),nativePaste=$('#dmManualAllInOne');if(topPaste&&nativePaste){topPaste.value=nativePaste.value||'';topPaste.oninput=()=>{nativePaste.value=topPaste.value;nativePaste.dispatchEvent(new Event('input',{bubbles:true}));};}
+ $('#dmTopUseManual')?.addEventListener('click',()=>{if(nativePaste&&topPaste){nativePaste.value=topPaste.value;nativePaste.dispatchEvent(new Event('input',{bubbles:true}));}$('#dmManualOnePaste')?.click();});
 }
 function openGroup(key){const p=$('#dmReelActionCenter');p?.querySelectorAll('.dm-action-group').forEach(x=>x.classList.toggle('is-open',x.dataset.actionGroup===key));}
 function sync(){const p=$('#dmReelActionCenter');if(!p)return;p.querySelectorAll('[data-action-for]').forEach(b=>{const o=source(b.dataset.actionFor);if(o){b.disabled=!!o.disabled;b.hidden=!!o.hidden;}});const posted=$('#dmPostedReelCount')?.textContent||'';const d=$('#dmDashPosted');if(d)d.textContent=posted;const gs=$('#dmReelGeminiStatus')?.dataset.type;const g=$('#dmDashGemini');if(g)g.textContent=gs==='error'?'Offline / Built-in':gs==='loading'?'Checking…':'Ready';}
-function boot(){let n=0;const timer=setInterval(()=>{n++;if(!$('#dmReelActionCenter'))build();else sync();if(n>40)clearInterval(timer)},200);document.addEventListener('dm-reel-content-change',()=>setTimeout(sync,80));document.addEventListener('dm-reel-studio-ready',()=>setTimeout(build,80));window.addEventListener('hashchange',()=>setTimeout(build,100));}
+function hideLegacy(){const panel=$('#dmReelActionCenter');if(!panel)return;const selectors=['#dmManualReelCard','#dmReelScheduleManager'];selectors.forEach(sel=>{const el=$(sel);if(el&&!el.closest('#dmReelActionCenter'))el.classList.add('dm-legacy-reel-control');});const controls=document.querySelector('.dm-reel-controls');if(controls)controls.classList.add('dm-legacy-controls-contained');}
+function boot(){let n=0;const timer=setInterval(()=>{n++;if(!$('#dmReelActionCenter'))build();else sync();hideLegacy();if(n>40)clearInterval(timer)},200);document.addEventListener('dm-reel-content-change',()=>setTimeout(sync,80));document.addEventListener('dm-reel-studio-ready',()=>setTimeout(build,80));window.addEventListener('hashchange',()=>setTimeout(build,100));}
 window.DM_REEL_ACTION_CENTER={build,sync,openGroup};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
