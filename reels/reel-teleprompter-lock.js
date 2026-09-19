@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies — lock teleprompter text while recording v1 */
+/* De Mayo Bible Studies — lock teleprompter text while recording v2 — capture complete narration */
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
@@ -8,7 +8,8 @@ function restore(){if(!locked||restoring||!lockedText)return;restoring=true;try{
 function lock(){const text=currentText();if(!text)return false;lockedText=text;locked=true;document.documentElement.dataset.dmTeleprompterLocked='1';restore();return true;}
 function unlock(){locked=false;lockedText='';delete document.documentElement.dataset.dmTeleprompterLocked;}
 function watch(){if(observer)observer.disconnect();observer=new MutationObserver(()=>restore());observer.observe(document.body,{subtree:true,childList:true,characterData:true});}
-function boot(){watch();document.addEventListener('click',e=>{if(e.target?.id==='dmStartVoiceover'){window.DM_REEL_VOICEOVER_DURATION_FIX?.apply?.();setTimeout(lock,0);}if(['dmStopVoiceover','dmFullscreenStop'].includes(e.target?.id))setTimeout(unlock,250);},true);document.addEventListener('dm-reel-voiceover-ready',unlock);document.addEventListener('dm-reel-manual-content-deleted',unlock);window.addEventListener('hashchange',()=>{if(location.hash!=='#reelcreator')unlock();});}
+function prepareAndLock(){unlock();try{window.DM_REEL_VOICEOVER_DURATION_FIX?.apply?.();}catch{}try{const c=window.DM_REEL_CREATOR?.getContent?.()||{};if(String(c.source||'').toLowerCase()==='manual')window.DM_REEL_MANUAL_CONTENT?.syncReading?.();}catch{}requestAnimationFrame(()=>{try{window.DM_REEL_VOICEOVER_DURATION_FIX?.apply?.();}catch{}try{const c=window.DM_REEL_CREATOR?.getContent?.()||{};if(String(c.source||'').toLowerCase()==='manual')window.DM_REEL_MANUAL_CONTENT?.syncReading?.();}catch{}requestAnimationFrame(lock);});}
+function boot(){watch();document.addEventListener('click',e=>{if(e.target?.id==='dmStartVoiceover')prepareAndLock();if(['dmStopVoiceover','dmFullscreenStop'].includes(e.target?.id))setTimeout(unlock,250);},true);document.addEventListener('dm-reel-voiceover-ready',unlock);document.addEventListener('dm-reel-manual-content-deleted',unlock);window.addEventListener('hashchange',()=>{if(location.hash!=='#reelcreator')unlock();});}
 window.DM_REEL_TELEPROMPTER_LOCK={lock,unlock,restore,isLocked:()=>locked,text:()=>lockedText};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
