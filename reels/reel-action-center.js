@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies — Reel Action Center v1
+/* De Mayo Bible Studies — Reel Action Center v2
    Collects existing Reel actions into one compact panel without replacing their original handlers. */
 (function(){
 'use strict';
@@ -15,14 +15,14 @@ function build(){
  if(!panel){
   const host=$('.dm-reel-v2'); if(!host)return false;
   panel=document.createElement('section');panel.id='dmReelActionCenter';panel.className='card dm-action-center';
-  panel.innerHTML='<div class="dm-action-center-head"><div><span class="pill">QUICK CONTROLS</span><h3>🎬 Reel Controls</h3><p>All your main Reel actions in one place.</p></div></div><div id="dmActionCenterGroups"></div>';
+  panel.innerHTML='<div class="dm-action-center-head"><div><span class="pill">QUICK CONTROLS</span><h3>🎬 Reel Controls</h3></div><em>One Place. Everything You Need.</em></div><div id="dmActionCenterGroups"></div>';
   const hero=host.querySelector('.dm-reel-hero');(hero||host.firstElementChild)?.insertAdjacentElement('afterend',panel);
  }
  const wrap=$('#dmActionCenterGroups'); if(!wrap)return false;
  const seen=new Set();
  for(const group of GROUPS){
   let box=wrap.querySelector('[data-action-group="'+group.title+'"]');
-  if(!box){box=document.createElement('div');box.className='dm-action-group';box.dataset.actionGroup=group.title;box.innerHTML='<h4>'+group.title+'</h4><div class="dm-action-grid"></div>';wrap.appendChild(box);}
+  if(!box){box=document.createElement('div');box.className='dm-action-group';box.dataset.actionGroup=group.title;box.innerHTML='<h4>'+({Create:'CREATE YOUR REEL',Recording:'RECORD YOUR REEL',Export:'EXPORT YOUR REEL',Publishing:'PUBLISH YOUR REEL'}[group.title]||group.title)+'</h4><div class="dm-action-grid"></div>';wrap.appendChild(box);}
   const grid=box.querySelector('.dm-action-grid');
   group.ids.forEach(id=>{
    const original=$('#'+id);if(!original||original.closest('#dmReelActionCenter')||seen.has(id))return;seen.add(id);
