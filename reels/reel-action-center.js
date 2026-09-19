@@ -65,7 +65,7 @@ function build(){
  panel.innerHTML='<div class="dm-action-center-head"><div><span class="pill">REEL WORKFLOW</span><h3>🎬 Reel Creator</h3><p>Create Faith-Filled Reels in Minutes</p></div><em>One Place. Everything You Need.</em></div><div id="dmActionCenterGroups"></div>';
  const wrap=$('#dmActionCenterGroups');
  const create=document.createElement('div');create.className='dm-action-group'+(open==='Create'?' is-open':'');create.dataset.actionGroup='Create';create.innerHTML='<button type="button" class="dm-action-group-toggle" aria-expanded="'+(open==='Create'?'true':'false')+'"><span><strong>✨ 1. CREATE YOUR REEL</strong><small>Choose content, theme and generate your script</small></span><b class="dm-action-chevron">⌄</b></button><div class="dm-action-body">'+createBody()+'</div>';create.querySelector('.dm-action-group-toggle').onclick=()=>create.classList.contains('is-open')?create.classList.remove('is-open'):openGroup('Create');wrap.appendChild(create);
- ['Recording','Video','Facebook','Save'].forEach(key=>wrap.appendChild(group(key,actionGrid(ACTIONS[key]),open===key)));
+ wrap.appendChild(group('Recording',actionGrid(ACTIONS.Recording),open==='Recording'));wrap.appendChild(group('Video','<div class="dm-video-top">'+selectProxy('dmMusic','Reel Sound','dmTopMusic')+'</div>'+actionGrid(ACTIONS.Video),open==='Video'));['Facebook','Save'].forEach(key=>wrap.appendChild(group(key,actionGrid(ACTIONS[key]),open===key)));
  wrap.appendChild(group('Weekly',weeklyBody(),open==='Weekly'));
  bind(panel);sync();return true;
 }
