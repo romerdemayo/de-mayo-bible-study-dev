@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies — Reel Action Center v6 — complete collapsible workflow */
+/* De Mayo Bible Studies — Reel Action Center v6.1 — complete collapsible workflow */
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
@@ -13,16 +13,17 @@ const GROUPS=[
 const ITEMS={
  Recording:[['dmStartVoiceover','🎙','Start Recording','Open Teleprompter'],['dmStopVoiceover','■','Stop Recording','End Session'],['dmRefreshVoiceoverScript','↻','Refresh Script','Update Teleprompter']],
  Video:[['dmNativeMp4','▣','Create MP4','With Sound'],['dmSilentMp4','🔇','MP4 Without Sound','No Audio Track'],['dmSaveVideo','⇩','Save Video','Save to Device']],
- Facebook:[['dmTopFacebook','ⓕ','Post to Facebook','Publish / Share'],['dmCopyCaption','▤','Copy Caption','To Clipboard'],['dmCopyHashtags','#','Copy Hashtags','To Clipboard'],['dmMarkPosted','✓','Mark as Posted','Save to History']],
+ Facebook:[['dmShareFacebookMp4','📤','Share to Facebook','Attach Created MP4'],['dmTopFacebook','ⓕ','Post Text to Facebook','Caption / Text Only'],['dmCopyCaption','▤','Copy Caption','To Clipboard'],['dmCopyHashtags','#','Copy Hashtags','To Clipboard'],['dmMarkPosted','✓','Mark as Posted','Save to History']],
  Save:[['dmSaveLibrary','📁','Save Reel','To My Reels'],['dmViewMyReels','☷','View My Reels','Open Library']]
 };
-function source(id){if(id==='dmTopFacebook')return $('#dmPublishFacebookNow');if(id==='dmViewMyReels')return $('#dmReelLibrary');return $('#'+id)}
+function source(id){if(id==='dmShareFacebookMp4')return window.DM_MP4_HAS_LATEST?.()?{disabled:false,hidden:false}:$('#dmShareLastMp4');if(id==='dmTopFacebook')return $('#dmPublishFacebookNow');if(id==='dmViewMyReels')return $('#dmReelLibrary');return $('#'+id)}
 function trigger(id){
+ if(id==='dmShareFacebookMp4'){if(window.DM_MP4_SHARE_LATEST)return window.DM_MP4_SHARE_LATEST();const b=$('#dmShareLastMp4');if(b&&!b.disabled)return b.click();window.toast?.('Create your MP4 first, then tap Share to Facebook.');return;}
  if(id==='dmTopFacebook'){const n=$('#dmPublishFacebookNow');if(n)return n.click();const c=window.DM_REEL_CREATOR?.getContent?.()||{};if(navigator.share)return navigator.share({title:c.title||'De Mayo Bible Studies',text:[c.caption,c.hashtags].filter(Boolean).join('\n\n')}).catch(()=>{});return;}
  if(id==='dmViewMyReels'){return $('#dmReelLibrary')?.scrollIntoView({behavior:'smooth',block:'start'});}
  const el=$('#'+id);if(el&&!el.disabled)el.click();
 }
-function actionButton(id,icon,label,sub){const o=source(id);if(!o&&id!=='dmTopFacebook'&&id!=='dmViewMyReels')return '';return '<button type="button" class="dm-dash-action" data-action-for="'+id+'"><span class="dm-action-icon">'+icon+'</span><span class="dm-action-copy"><strong>'+label+'</strong><small>'+sub+'</small></span></button>'}
+function actionButton(id,icon,label,sub){const o=source(id);if(!o&&!['dmShareFacebookMp4','dmTopFacebook','dmViewMyReels'].includes(id))return '';return '<button type="button" class="dm-dash-action" data-action-for="'+id+'"><span class="dm-action-icon">'+icon+'</span><span class="dm-action-copy"><strong>'+label+'</strong><small>'+sub+'</small></span></button>'}
 function selectProxy(label,id){const el=$('#'+id);if(!el)return '';return '<label class="dm-dash-field"><span>'+label+'</span><select data-proxy-select="'+id+'">'+el.innerHTML+'</select></label>'}
 function createBody(){
  const nativeType=$('#dmReelContentType')?.value||'devotional',type=nativeType==='motivation'?'motivation':($('[data-dm-type].active')?.dataset.dmType||'verse');
@@ -57,7 +58,7 @@ function wire(){
  $('#dmTopUseManual')?.addEventListener('click',()=>{if(nativePaste&&topPaste){nativePaste.value=topPaste.value;nativePaste.dispatchEvent(new Event('input',{bubbles:true}));}$('#dmManualOnePaste')?.click();});
 }
 function openGroup(key){const p=$('#dmReelActionCenter');p?.querySelectorAll('.dm-action-group').forEach(x=>x.classList.toggle('is-open',x.dataset.actionGroup===key));}
-function sync(){const p=$('#dmReelActionCenter');if(!p)return;p.querySelectorAll('[data-action-for]').forEach(b=>{const o=source(b.dataset.actionFor);if(o){b.disabled=!!o.disabled;b.hidden=!!o.hidden;}});const posted=$('#dmPostedReelCount')?.textContent||'';const d=$('#dmDashPosted');if(d)d.textContent=posted;const gs=$('#dmReelGeminiStatus')?.dataset.type;const g=$('#dmDashGemini');if(g)g.textContent=gs==='error'?'Offline / Built-in':gs==='loading'?'Checking…':'Ready';}
+function sync(){const p=$('#dmReelActionCenter');if(!p)return;p.querySelectorAll('[data-action-for]').forEach(b=>{const o=source(b.dataset.actionFor);if(o){b.disabled=!!o.disabled;b.hidden=!!o.hidden;}else if(b.dataset.actionFor==='dmShareFacebookMp4'){b.disabled=!window.DM_MP4_HAS_LATEST?.();}});const posted=$('#dmPostedReelCount')?.textContent||'';const d=$('#dmDashPosted');if(d)d.textContent=posted;const gs=$('#dmReelGeminiStatus')?.dataset.type;const g=$('#dmDashGemini');if(g)g.textContent=gs==='error'?'Offline / Built-in':gs==='loading'?'Checking…':'Ready';}
 function hideLegacy(){const panel=$('#dmReelActionCenter');if(!panel)return;const selectors=['#dmManualReelCard','#dmReelScheduleManager'];selectors.forEach(sel=>{const el=$(sel);if(el&&!el.closest('#dmReelActionCenter'))el.classList.add('dm-legacy-reel-control');});const controls=document.querySelector('.dm-reel-controls');if(controls)controls.classList.add('dm-legacy-controls-contained');}
 function boot(){let n=0;const timer=setInterval(()=>{n++;if(!$('#dmReelActionCenter'))build();else sync();hideLegacy();if(n>40)clearInterval(timer)},200);document.addEventListener('dm-reel-content-change',()=>setTimeout(sync,80));document.addEventListener('dm-reel-studio-ready',()=>setTimeout(build,80));window.addEventListener('hashchange',()=>setTimeout(build,100));}
 window.DM_REEL_ACTION_CENTER={build,sync,openGroup};
