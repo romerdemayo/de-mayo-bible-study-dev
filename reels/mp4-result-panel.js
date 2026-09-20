@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies - persistent MP4 result panel */
+/* De Mayo Bible Studies - persistent MP4 result panel v2 */
 (function(){
 'use strict';
 let latestUrl='',latestBlob=null,latestName='';
@@ -59,7 +59,9 @@ function showResult(blob,url){
   panel.querySelector('#dmMp4Preview').href=url;
   panel.hidden=false;
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
-  setStatus('MP4 created. Choose Save MP4 As… to write it to your Mac.');
+  setStatus(isPhone?'MP4 ready. You can now save it to your phone or share it to Facebook.':'MP4 created. Choose Save MP4 As… to write it to your Mac.');
+  document.dispatchEvent(new CustomEvent('dm-mp4-ready',{detail:{blob,name:latestName}}));
+  window.DM_REEL_ACTION_CENTER?.sync?.();
 }
 function acceptResult(blob){
   if(!(blob instanceof Blob)||!blob.size){setStatus('The finished MP4 could not be prepared for saving or sharing.','error');return;}
