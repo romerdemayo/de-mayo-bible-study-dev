@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies — Reel Action Center v6.2 — complete collapsible workflow */
+/* De Mayo Bible Studies — Reel Action Center v6.3 — complete collapsible workflow */
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
@@ -60,7 +60,7 @@ function wire(){
 function openGroup(key){const p=$('#dmReelActionCenter');p?.querySelectorAll('.dm-action-group').forEach(x=>x.classList.toggle('is-open',x.dataset.actionGroup===key));}
 function sync(){const p=$('#dmReelActionCenter');if(!p)return;p.querySelectorAll('[data-action-for]').forEach(b=>{const o=source(b.dataset.actionFor);if(o){b.disabled=!!o.disabled;b.hidden=!!o.hidden;}else if(b.dataset.actionFor==='dmShareFacebookMp4'){b.disabled=!window.DM_MP4_HAS_LATEST?.();}});const posted=$('#dmPostedReelCount')?.textContent||'';const d=$('#dmDashPosted');if(d)d.textContent=posted;const gs=$('#dmReelGeminiStatus')?.dataset.type;const g=$('#dmDashGemini');if(g)g.textContent=gs==='error'?'Offline / Built-in':gs==='loading'?'Checking…':'Ready';}
 function hideLegacy(){const panel=$('#dmReelActionCenter');if(!panel)return;const selectors=['#dmManualReelCard','#dmReelScheduleManager'];selectors.forEach(sel=>{const el=$(sel);if(el&&!el.closest('#dmReelActionCenter'))el.classList.add('dm-legacy-reel-control');});const controls=document.querySelector('.dm-reel-controls');if(controls)controls.classList.add('dm-legacy-controls-contained');}
-function boot(){let n=0;const timer=setInterval(()=>{n++;if(!$('#dmReelActionCenter'))build();else sync();hideLegacy();if(n>40)clearInterval(timer)},200);document.addEventListener('dm-reel-content-change',()=>setTimeout(sync,80));document.addEventListener('dm-reel-studio-ready',()=>setTimeout(build,80));window.addEventListener('hashchange',()=>setTimeout(build,100));}
+function boot(){let n=0;const timer=setInterval(()=>{n++;if(!$('#dmReelActionCenter'))build();else sync();hideLegacy();if(n>40)clearInterval(timer)},200);document.addEventListener('dm-reel-content-change',()=>setTimeout(sync,80));document.addEventListener('dm-mp4-ready',()=>{sync();openGroup('Facebook');setTimeout(sync,50);});document.addEventListener('dm-reel-studio-ready',()=>setTimeout(build,80));window.addEventListener('hashchange',()=>setTimeout(build,100));}
 window.DM_REEL_ACTION_CENTER={build,sync,openGroup};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
