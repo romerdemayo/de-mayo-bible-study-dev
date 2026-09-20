@@ -1,4 +1,4 @@
-/* De Mayo Bible Studies — Reel Action Center v6.1 — complete collapsible workflow */
+/* De Mayo Bible Studies — Reel Action Center v6.2 — complete collapsible workflow */
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
@@ -12,7 +12,7 @@ const GROUPS=[
 ];
 const ITEMS={
  Recording:[['dmStartVoiceover','🎙','Start Recording','Open Teleprompter'],['dmStopVoiceover','■','Stop Recording','End Session'],['dmRefreshVoiceoverScript','↻','Refresh Script','Update Teleprompter']],
- Video:[['dmNativeMp4','▣','Create MP4','With Sound'],['dmSilentMp4','🔇','MP4 Without Sound','No Audio Track'],['dmSaveVideo','⇩','Save Video','Save to Device']],
+ Video:[['dmNativeMp4','▣','Create MP4','With Sound'],['dmSilentMp4','🎙','Create MP4 — Voice Only','Recorded Voice • No Music'],['dmSaveVideo','⇩','Save Video','Save to Device']],
  Facebook:[['dmShareFacebookMp4','📤','Share to Facebook','Attach Created MP4'],['dmTopFacebook','ⓕ','Post Text to Facebook','Caption / Text Only'],['dmCopyCaption','▤','Copy Caption','To Clipboard'],['dmCopyHashtags','#','Copy Hashtags','To Clipboard'],['dmMarkPosted','✓','Mark as Posted','Save to History']],
  Save:[['dmSaveLibrary','📁','Save Reel','To My Reels'],['dmViewMyReels','☷','View My Reels','Open Library']]
 };
