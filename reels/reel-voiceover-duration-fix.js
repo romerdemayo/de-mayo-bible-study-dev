@@ -1,6 +1,6 @@
-/* De Mayo Bible Studies — daily voice-over duration bridge v12
-   Always uses the exact raw narration for manual, offline and generated Reels.
-   Reflection and prayer are never shortened in the teleprompter. Engagement remains visual only. */
+/* De Mayo Bible Studies — daily voice-over duration bridge v13
+   Selected Reel duration is authoritative for the teleprompter.
+   Generated/manual raw narration must not overwrite the duration-fitted script. */
 (function(){
 'use strict';
 const $=s=>document.querySelector(s),clean=v=>String(v||'').replace(/\s+/g,' ').trim(),words=v=>clean(v).split(' ').filter(Boolean);
@@ -27,6 +27,7 @@ function build(){
  return [verse,reference,'Let us reflect.',fullReflection,'Let us pray.',prayer].filter(Boolean).join('\n\n');
 }
 function apply(){
+ if(window.DM_REEL_DURATION_SYNC?.syncVoiceoverScript){window.DM_REEL_DURATION_SYNC.syncVoiceoverScript();return true;}
  const text=build();if(!text)return false;
  const area=$('#dmVoiceoverScript'),full=$('#dmVoiceoverFullscreenScript');
  if(area&&area.textContent!==text){area.textContent=text;area.scrollTop=0;area.dataset.dmFullNarration='1';}
