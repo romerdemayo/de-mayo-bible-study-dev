@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
-const MAX_RECORDING_SECONDS=120,MAX_SCRIPT_WORDS=150;
+const MAX_RECORDING_SECONDS=120,MAX_SCRIPT_WORDS=190;
 let recorder=null,stream=null,chunks=[],startedAt=0,timer=null,previewUrl='',scrollFrame=0,scrollLast=0,scrollDelayUntil=0,scrollPaused=false,scrollPosition=0;
 window.DM_REEL_VOICEOVER_BLOB=null;
 window.DM_REEL_VOICEOVER_DURATION=0;
@@ -43,7 +43,9 @@ function closePrompter(){const overlay=$('#dmPrompterOverlay'),full=$('#dmVoiceo
 function toggleFullPrompter(){const overlay=$('#dmPrompterOverlay');if(overlay&&!overlay.hidden)closePrompter();else openPrompter()}
 function supportedType(){return['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(type=>MediaRecorder.isTypeSupported(type))||''}
 function cleanupStream(){if(stream){stream.getTracks().forEach(track=>track.stop());stream=null}}
-function updateTimer(){const elapsed=(Date.now()-startedAt)/1000,value=`${Math.floor(elapsed/60)}:${String(Math.floor(elapsed)%60).padStart(2,'0')} / 1:30`;document.querySelectorAll('#dmVoiceoverTimer,#dmFullscreenTimer').forEach(el=>el.textContent=value);if(elapsed>=MAX_RECORDING_SECONDS&&recorder?.state!=='inactive'){status('Two-minute recording complete. Finishing your voice-over…','loading');stop()}}
+function selectedRecordingSeconds(){const n=Number($('#dmDuration')?.value||30);return Math.max(15,Math.min(MAX_RECORDING_SECONDS,Number.isFinite(n)?n:30));}
+function clock(seconds){const s=Math.max(0,Math.round(seconds));return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;}
+function updateTimer(){const elapsed=(Date.now()-startedAt)/1000,target=selectedRecordingSeconds(),value=`${clock(elapsed)} / ${clock(target)}`;document.querySelectorAll('#dmVoiceoverTimer,#dmFullscreenTimer').forEach(el=>el.textContent=value);if(elapsed>=target&&recorder?.state!=='inactive'){status(`${target}-second recording complete. Finishing your voice-over…`,'loading');stop()}}
 async function start(){
  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)return status('Voice recording is not supported in this browser.','error');
  try{
@@ -53,7 +55,7 @@ async function start(){
   recorder.onstop=finish;
   recorder.start(500);startedAt=Date.now();timer=setInterval(updateTimer,250);updateTimer();openPrompter();startPrompter();
   $('#dmStartVoiceover').hidden=true;$('#dmStopVoiceover').hidden=false;$('#dmDeleteVoiceover').disabled=true;
-  status('Recording… Read the script naturally, then tap Stop.','loading');
+  status(`Recording… This Reel is ${selectedRecordingSeconds()} seconds. The recorder will stop automatically at the selected length.`,'loading');
  }catch(error){console.error(error);cleanupStream();status(error?.name==='NotAllowedError'?'Microphone permission was not allowed. Enable microphone access for Safari and try again.':'The microphone could not start.','error')}
 }
 function stop(){stopPrompter();if(recorder&&recorder.state!=='inactive')recorder.stop()}
