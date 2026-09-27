@@ -45,7 +45,7 @@ function supportedType(){return['audio/mp4','audio/webm;codecs=opus','audio/webm
 function cleanupStream(){if(stream){stream.getTracks().forEach(track=>track.stop());stream=null}}
 function selectedRecordingSeconds(){const n=Number($('#dmDuration')?.value||30);return Math.max(15,Math.min(MAX_RECORDING_SECONDS,Number.isFinite(n)?n:30));}
 function clock(seconds){const s=Math.max(0,Math.round(seconds));return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;}
-function updateTimer(){const elapsed=(Date.now()-startedAt)/1000,target=selectedRecordingSeconds(),value=`${clock(elapsed)} / ${clock(target)}`;document.querySelectorAll('#dmVoiceoverTimer,#dmFullscreenTimer').forEach(el=>el.textContent=value);if(elapsed>=target&&recorder?.state!=='inactive'){status(`${target}-second recording complete. Finishing your voice-over…`,'loading');stop()}}
+function updateTimer(){const elapsed=(Date.now()-startedAt)/1000,target=selectedRecordingSeconds(),value=`${clock(elapsed)} / ${clock(target)}`;document.querySelectorAll('#dmVoiceoverTimer,#dmFullscreenTimer').forEach(el=>el.textContent=value);if(elapsed>=MAX_RECORDING_SECONDS&&recorder?.state!=='inactive'){status('Maximum recording time reached. Finishing your voice-over…','loading');stop()}}
 async function start(){
  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)return status('Voice recording is not supported in this browser.','error');
  try{
@@ -55,7 +55,7 @@ async function start(){
   recorder.onstop=finish;
   recorder.start(500);startedAt=Date.now();timer=setInterval(updateTimer,250);updateTimer();openPrompter();startPrompter();
   $('#dmStartVoiceover').hidden=true;$('#dmStopVoiceover').hidden=false;$('#dmDeleteVoiceover').disabled=true;
-  status(`Recording… This Reel is ${selectedRecordingSeconds()} seconds. The recorder will stop automatically at the selected length.`,'loading');
+  status(`Recording… Target Reel length is ${selectedRecordingSeconds()} seconds. Finish the prepared script naturally, then tap Stop.`,'loading');
  }catch(error){console.error(error);cleanupStream();status(error?.name==='NotAllowedError'?'Microphone permission was not allowed. Enable microphone access for Safari and try again.':'The microphone could not start.','error')}
 }
 function stop(){stopPrompter();if(recorder&&recorder.state!=='inactive')recorder.stop()}
